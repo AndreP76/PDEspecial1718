@@ -3,6 +3,7 @@ package Comunication.ChatUtils;
 import java.io.Serializable;
 
 public class ChatPacket implements Serializable {
+    private static final long serialVersionUID = 841634384L;
     public static final String GENERAL_STRING = "<!3V3RY0N3!>";
     private String sender;
     private String target;

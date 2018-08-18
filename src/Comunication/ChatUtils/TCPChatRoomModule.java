@@ -6,15 +6,17 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
-import java.util.Dictionary;
+import java.util.HashMap;
 
 public class TCPChatRoomModule extends Thread {
     private int ChatPort;
-    private ServerSocket SS;
-    private ArrayList<ObjectInputStream> fromClientSources;
-    private ArrayList<ObjectOutputStream> outToClients;
-    private ArrayList<Socket> clientTCPSockets;
-    private Dictionary<String, Integer> ClientsToIndexDictionary;
+    ServerSocket SS;
+    ArrayList<ObjectInputStream> fromClientSources;
+    ArrayList<ObjectOutputStream> outToClients;
+    ArrayList<Socket> clientTCPSockets;
+    ArrayList<ChatRoomHandler> clientHandlingThreads;
+    HashMap<String, Integer> ClientsToIndexDictionary;
+    int currentClientCount = 0;
 
     TCPChatRoomModule() {
         try {
@@ -31,16 +33,27 @@ public class TCPChatRoomModule extends Thread {
         while (!isInterrupted()) {
             try {
                 Socket S = SS.accept();
-                ObjectOutputStream toClientStream = new ObjectOutputStream(S.getOutputStream());
                 ObjectInputStream fromClient = new ObjectInputStream(S.getInputStream());
                 ChatPacket cp = (ChatPacket) fromClient.readObject();
-                //TODO : check if client is in list. If not, add
-                if (cp.getTarget().equals(ChatPacket.GENERAL_STRING)) {//send to everyone
-                    //TODO : send to everyone
-                    //TODO : create a special HELLO message
-                }//TODO : find specific target and send message
-                //read message
-                //find targets
+                if (ClientsToIndexDictionary.containsKey(cp.getSender())) {//client already exists
+                    //replace the streams, maybe a disconnect happened
+                    int clientIndex = ClientsToIndexDictionary.get(cp.getSender());
+                    ObjectOutputStream toClient = new ObjectOutputStream(S.getOutputStream());
+                    fromClientSources.set(clientIndex, fromClient);
+                    outToClients.set(clientIndex, toClient);
+                    clientTCPSockets.set(clientIndex, S);
+                    clientHandlingThreads.get(clientIndex).updateStreams(S, fromClient, this);
+                } else {
+                    fromClientSources.add(fromClient);
+                    ObjectOutputStream toClient = new ObjectOutputStream(S.getOutputStream());
+                    outToClients.add(toClient);
+                    clientTCPSockets.add(S);
+                    ChatRoomHandler handlingThread = new ChatRoomHandler(S, cp.getSender(), fromClient, this);
+                    clientHandlingThreads.add(handlingThread);
+                    ClientsToIndexDictionary.put(cp.getSender(), currentClientCount);
+                    handlingThread.start();
+                    currentClientCount++;
+                }
             } catch (IOException e) {
                 e.printStackTrace();
             } catch (ClassNotFoundException e) {
