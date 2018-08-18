@@ -1,9 +1,9 @@
-package JDBCUtils;
+package Comunication.JDBCUtils;
 
-import JDBCUtils.DBExceptions.AuthenticationSQLError;
-import JDBCUtils.DBExceptions.DuplicateLoginException;
-import JDBCUtils.DBExceptions.DuplicateLogoutException;
-import JDBCUtils.DBExceptions.UnknownUserException;
+import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
+import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
+import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
+import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -18,7 +18,7 @@ public class JDBCHandler {
     String username;
     String password;
 
-    JDBCHandler(String serverIP, String port, String username, String password) {
+    public JDBCHandler(String serverIP, String port, String username, String password) {
         this.databaseServerAddressString = serverIP;
         this.databasePortString = port;
         this.username = username;
@@ -27,13 +27,15 @@ public class JDBCHandler {
         connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
     }
 
-    JDBCHandler(String serverIP, String port) {
+    public JDBCHandler(String serverIP, String port) {
         this(serverIP, port, "pduser", "pduser");
     }
-    JDBCHandler(String serverIP) {
+
+    public JDBCHandler(String serverIP) {
         this(serverIP, "3306", "pduser", "pduser");
     }
-    JDBCHandler() {
+
+    public JDBCHandler() {
         this("127.0.0.1", "3306", "pduser", "pduser");
     }
 
@@ -256,5 +258,55 @@ public class JDBCHandler {
         } catch (SQLException sqlex) {
             return null;
         }
+    }
+
+    //********************* GETTERS ********************************\\
+    public String getDatabaseServerAddressString() {
+        return databaseServerAddressString;
+    }
+
+    //********************* SETTERS ********************************\\
+    public void setDatabaseServerAddressString(String databaseServerAddressString) {
+        this.databaseServerAddressString = databaseServerAddressString;
+        refreshConnectionString();
+    }
+
+    public String getDatabasePortString() {
+        return databasePortString;
+    }
+
+    public void setDatabasePortString(String databasePortString) {
+        this.databasePortString = databasePortString;
+        refreshConnectionString();
+    }
+
+    public String getDatabaseNameString() {
+        return databaseNameString;
+    }
+
+    public void setDatabaseNameString(String databaseNameString) {
+        this.databaseNameString = databaseNameString;
+        refreshConnectionString();
+    }
+
+    public String getConnectionString() {
+        return connectionString;
+    }
+
+    public String getUsername() {
+        return username;
+    }
+
+    public void setUsername(String username) {
+        this.username = username;
+    }
+
+    public void setPassword(String password) {
+        this.password = password;
+    }
+
+    //********************** MISC **********************************\\
+    private void refreshConnectionString() {
+        connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
     }
 }

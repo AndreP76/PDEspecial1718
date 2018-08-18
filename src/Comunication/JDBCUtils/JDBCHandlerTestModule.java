@@ -1,9 +1,9 @@
-package JDBCUtils;
+package Comunication.JDBCUtils;
 
-import JDBCUtils.DBExceptions.AuthenticationSQLError;
-import JDBCUtils.DBExceptions.DuplicateLoginException;
-import JDBCUtils.DBExceptions.DuplicateLogoutException;
-import JDBCUtils.DBExceptions.UnknownUserException;
+import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
+import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
+import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
+import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -155,7 +155,7 @@ public class JDBCHandlerTestModule {
     }
 
     public static void main(String[] args) {
-        j = new JDBCHandler("localhost", "3306");
+        j = new JDBCHandler("localhost", "3306", "pduser", "pduser");
 
         if (TestConnection()) {
             TestRetrieval();

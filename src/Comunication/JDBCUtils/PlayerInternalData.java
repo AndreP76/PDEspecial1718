@@ -1,4 +1,4 @@
-package JDBCUtils;
+package Comunication.JDBCUtils;
 
 public class PlayerInternalData {
     public static final String UNKNOWN_DATA_STRING = "*********************************";

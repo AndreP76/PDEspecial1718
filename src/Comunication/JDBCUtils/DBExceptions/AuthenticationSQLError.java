@@ -1,4 +1,4 @@
-package JDBCUtils.DBExceptions;
+package Comunication.JDBCUtils.DBExceptions;
 
 public class AuthenticationSQLError extends Exception {
     public AuthenticationSQLError() {

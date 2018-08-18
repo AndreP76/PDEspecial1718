@@ -1,4 +1,4 @@
-package JDBCUtils.DBExceptions;
+package Comunication.JDBCUtils.DBExceptions;
 
 public class UnknownUserException extends Exception {
     String name;
