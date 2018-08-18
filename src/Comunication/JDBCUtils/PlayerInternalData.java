@@ -27,4 +27,8 @@ public class PlayerInternalData {
         this.realName = realName;
         this.loggedIn = (loggedIn == 1);
     }
+
+    public String getName() {
+        return name;
+    }
 }

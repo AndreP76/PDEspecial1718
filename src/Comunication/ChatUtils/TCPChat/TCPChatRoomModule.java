@@ -1,4 +1,4 @@
-package Comunication.ChatUtils;
+package Comunication.ChatUtils.TCPChat;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;

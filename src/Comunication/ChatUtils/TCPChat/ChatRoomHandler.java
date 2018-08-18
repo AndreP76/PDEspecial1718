@@ -1,4 +1,4 @@
-package Comunication.ChatUtils;
+package Comunication.ChatUtils.TCPChat;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -44,7 +44,7 @@ public class ChatRoomHandler extends Thread {
                         int clientIndex = tcpMasterService.ClientsToIndexDictionary.get(cp.getTarget());
                         tcpMasterService.outToClients.get(clientIndex).writeObject(cp);
                     } else {//unknown client
-                        tcpMasterService.outToClients.get(tcpMasterService.ClientsToIndexDictionary.get(cp.getSender())).writeObject(new ChatPacket(ChatPacket.GAME_SERVER_ID, cp.getSender(), "USER " + cp.getTarget() + " is unreachable at the moment. Please try again later"));
+                        tcpMasterService.outToClients.get(tcpMasterService.ClientsToIndexDictionary.get(cp.getSender())).writeObject(new ChatPacket(ChatPacket.CHAT_SERVER_ID, cp.getSender(), "USER " + cp.getTarget() + " is unreachable at the moment. Please try again later"));
                         //reply with an error message to the sender
                     }
                 } else {//crossed comunications

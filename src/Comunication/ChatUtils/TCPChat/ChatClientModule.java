@@ -1,4 +1,4 @@
-package Comunication.ChatUtils;
+package Comunication.ChatUtils.TCPChat;
 
 import Colections.EventQueue;
 
@@ -26,7 +26,7 @@ public class ChatClientModule {
 
         S.connect(new InetSocketAddress(ServerIP, ServerPort));
         toServer = new ObjectOutputStream(S.getOutputStream());
-        toServer.writeObject(new ChatPacket(this.clientName, ChatPacket.GAME_SERVER_ID, ChatPacket.HELLO_STRING));
+        toServer.writeObject(new ChatPacket(this.clientName, ChatPacket.CHAT_SERVER_ID, ChatPacket.HELLO_STRING));
 
         fromServer = new ObjectInputStream(S.getInputStream());
 

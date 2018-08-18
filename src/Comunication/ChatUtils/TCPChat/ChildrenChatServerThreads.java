@@ -1,4 +1,4 @@
-package Comunication.ChatUtils;
+package Comunication.ChatUtils.TCPChat;
 
 public class ChildrenChatServerThreads extends Thread {
     private TCPChatRoomModule fatherThread;

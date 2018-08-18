@@ -1,4 +1,4 @@
-package Comunication.ChatUtils;
+package Comunication.ChatUtils.TCPChat;
 
 import Colections.EventQueue;
 
