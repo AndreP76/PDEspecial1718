@@ -3,13 +3,14 @@ package Comunication.ChatUtils;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.PrintStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.ArrayList;
 import java.util.HashMap;
 
 public class TCPChatRoomModule extends Thread {
-    private int ChatPort;
+    PrintStream verboseStream;
     ServerSocket SS;
     ArrayList<ObjectInputStream> fromClientSources;
     ArrayList<ObjectOutputStream> outToClients;
@@ -17,14 +18,26 @@ public class TCPChatRoomModule extends Thread {
     ArrayList<ChatRoomHandler> clientHandlingThreads;
     HashMap<String, Integer> ClientsToIndexDictionary;
     int currentClientCount = 0;
+    private int ChatPort = 21684;
+    //the server launches this, and this thread handles everything about the chat thing
 
-    TCPChatRoomModule() {
+    TCPChatRoomModule(PrintStream verboseStream) {
         try {
-            SS = new ServerSocket(0);
-            ChatPort = SS.getLocalPort();
+            this.verboseStream = verboseStream;
+            SS = new ServerSocket(ChatPort);
+
+            ClientsToIndexDictionary = new HashMap<>();
+            fromClientSources = new ArrayList<>();
+            outToClients = new ArrayList<>();
+            clientTCPSockets = new ArrayList<>();
+            clientHandlingThreads = new ArrayList<>();
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    TCPChatRoomModule() {
+        this(null);
     }
 
     @Override
@@ -32,10 +45,13 @@ public class TCPChatRoomModule extends Thread {
         super.run();
         while (!isInterrupted()) {
             try {
+                verboseLog("Waiting for new client...");
                 Socket S = SS.accept();
+                verboseLog("Found new client!");
                 ObjectInputStream fromClient = new ObjectInputStream(S.getInputStream());
                 ChatPacket cp = (ChatPacket) fromClient.readObject();
                 if (ClientsToIndexDictionary.containsKey(cp.getSender())) {//client already exists
+                    verboseLog("Client already registred!! WARNING");
                     //replace the streams, maybe a disconnect happened
                     int clientIndex = ClientsToIndexDictionary.get(cp.getSender());
                     ObjectOutputStream toClient = new ObjectOutputStream(S.getOutputStream());
@@ -44,6 +60,7 @@ public class TCPChatRoomModule extends Thread {
                     clientTCPSockets.set(clientIndex, S);
                     clientHandlingThreads.get(clientIndex).updateStreams(S, fromClient, this);
                 } else {
+                    verboseLog("Registering new client");
                     fromClientSources.add(fromClient);
                     ObjectOutputStream toClient = new ObjectOutputStream(S.getOutputStream());
                     outToClients.add(toClient);
@@ -63,7 +80,13 @@ public class TCPChatRoomModule extends Thread {
         }
     }
 
-    protected void RemoveChildren(int childrenCount) {
+    private void verboseLog(String s) {
+        if (verboseStream != null) {
+            verboseStream.println(s);
+        }
+    }
 
+    public int getChatPort() {
+        return ChatPort;
     }
 }

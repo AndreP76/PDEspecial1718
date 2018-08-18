@@ -5,6 +5,8 @@ import java.io.Serializable;
 public class ChatPacket implements Serializable {
     private static final long serialVersionUID = 841634384L;
     public static final String GENERAL_STRING = "<!3V3RY0N3!>";
+    public static final String GAME_SERVER_ID = "CHAT_SERVER";
+    public static final String HELLO_STRING = "8101762ade92ec9ed331677efe04cdfd";
     private String sender;
     private String target;
     private String messageContents;
