@@ -1,27 +1,27 @@
 package Comunication.RMIHandlers;
 
 import Comunication.JDBCUtils.JDBCHandler;
-import Comunication.RMIInterfaces.RMIManagementServerInterface;
+import Comunication.RMIInterfaces.RMIHeartbeatInterface;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 
-public class RMIGameServerHandler extends Thread {
+public class RMIHeartbeatHandler extends Thread {
     private JDBCHandler DBHandler = null;//here because the heartbeats update this
     private int HearbeatMiliseconds = 3000; //3 seconds between beats
     private int HearbeatMaxConsecutiveFailures = 3;//stops on this number of failed heartbeats
     private int CurrentConsecutiveHeatbeatFailures = 0;
     private int CumulativeHeatbeatFailures = 0;//stats only
 
-    private RMIManagementServerInterface managementServer;
+    private RMIHeartbeatInterface managementServer;
     private String ManagementServerIPAddressString;
     private String RMIConnectionString;
     private String ServiceName = "ManagementServerRMI";
     private String ID;
 
-    public RMIGameServerHandler(String IP) {
+    public RMIHeartbeatHandler(String IP) {
         this.ManagementServerIPAddressString = IP;
         RMIConnectionString = "//" + ManagementServerIPAddressString + "/" + ServiceName;
         ID = this.generateID();
@@ -41,7 +41,7 @@ public class RMIGameServerHandler extends Thread {
     @Override
     public void run() {
         try {
-            managementServer = (RMIManagementServerInterface) Naming.lookup(RMIConnectionString);
+            managementServer = (RMIHeartbeatInterface) Naming.lookup(RMIConnectionString);
             String IPString = managementServer.hearbeatMethod(this.ID);//The initial update
             DBHandler.setDatabaseServerAddressString(IPString);
         } catch (NotBoundException e) {

@@ -1,4 +1,4 @@
-package Comunication.ChatUtils.RMIChat;
+package Comunication.RMIInterfaces;
 
 import Comunication.ChatUtils.TCPChat.ChatPacket;
 import Comunication.JDBCUtils.PlayerInternalData;

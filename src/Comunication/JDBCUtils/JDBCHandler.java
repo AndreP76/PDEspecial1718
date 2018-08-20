@@ -4,9 +4,11 @@ import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
+import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.Collection;
 
 public class JDBCHandler {
     String databaseServerAddressString;
@@ -39,7 +41,7 @@ public class JDBCHandler {
         this("127.0.0.1", "3306", "pduser", "pduser");
     }
 
-    boolean ConnectToDB() {
+    public boolean ConnectToDB() {
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             return true;
         } catch (SQLException sqlex) {
@@ -61,7 +63,7 @@ public class JDBCHandler {
 
     @Deprecated
 //Either fix or delete. Preferably delete
-    boolean CreateUser(PlayerInternalData PID) {
+    public boolean CreateUser(PlayerInternalData PID) {
         //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             //TODO : Encriptar a password nem que seja com MD5
@@ -74,7 +76,7 @@ public class JDBCHandler {
         }
     }
 
-    boolean CreateUser(String Name, String Password, String realName) {
+    public boolean CreateUser(String Name, String Password, String realName) {
         //TODO : Verificar parametros
         if (Name != null && Password != null && realName != null) {
             try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
@@ -89,7 +91,7 @@ public class JDBCHandler {
         } else return false;
     }
 
-    boolean LoginUser(String Name, String Password) throws DuplicateLoginException, AuthenticationSQLError {
+    public boolean LoginUser(String Name, String Password) throws DuplicateLoginException, AuthenticationSQLError {
         try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
             Statement queryFindUser = con.createStatement();
             String findUserQuery = "SELECT ID,LoggedIn FROM Users WHERE Name = '" + Name + "' AND Password = '" + Password + "';";
@@ -115,7 +117,7 @@ public class JDBCHandler {
         }
     }
 
-    boolean LogoutUser(String Name) throws AuthenticationSQLError, DuplicateLogoutException {
+    public boolean LogoutUser(String Name) throws AuthenticationSQLError, DuplicateLogoutException {
         try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
             Statement queryFindUser = con.createStatement();
             String findUserQuery = "SELECT ID,LoggedIn FROM Users WHERE Name = '" + Name + "';";
@@ -140,7 +142,7 @@ public class JDBCHandler {
         }
     }
 
-    boolean DeleteUser(String Name, String Password) throws AuthenticationSQLError, UnknownUserException {
+    public boolean DeleteUser(String Name, String Password) throws AuthenticationSQLError, UnknownUserException {
         try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
             Statement queryFindUser = con.createStatement();
             String findUserQuery = "SELECT ID,LoggedIn FROM Users WHERE Name = '" + Name + "' AND Password = '" + Password + "';";
@@ -159,7 +161,7 @@ public class JDBCHandler {
         }
     }
 
-    PlayerInternalData RetrievePlayer(String userName) {
+    public PlayerInternalData RetrievePlayer(String userName) {
         //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -173,7 +175,7 @@ public class JDBCHandler {
         }
     }
 
-    PlayerInternalData RetrievePlayer(int ID) {
+    public PlayerInternalData RetrievePlayer(int ID) {
         //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -187,7 +189,7 @@ public class JDBCHandler {
         }
     }
 
-    PlayerInternalData RetrievePlayerQuick(String name) {
+    public PlayerInternalData RetrievePlayerQuick(String name) {
         //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -201,7 +203,7 @@ public class JDBCHandler {
         }
     }
 
-    PlayerInternalData RetrievePlayerQuick(int ID) {
+    public PlayerInternalData RetrievePlayerQuick(int ID) {
         //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -215,7 +217,7 @@ public class JDBCHandler {
         }
     }
 
-    ArrayList<PlayerInternalData> RetrieveAllUsersQuick() {
+    public ArrayList<PlayerInternalData> RetrieveAllUsersQuick() {
         ArrayList<PlayerInternalData> PIDS = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -230,7 +232,7 @@ public class JDBCHandler {
         }
     }
 
-    ArrayList<PlayerInternalData> RetrieveAllUsersFull() {
+    public ArrayList<PlayerInternalData> RetrieveAllUsersFull() {
         ArrayList<PlayerInternalData> PIDS = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -245,7 +247,23 @@ public class JDBCHandler {
         }
     }
 
-    ArrayList<String> RetrieveAllUsersNames() {
+    public ArrayList<PlayerInternalData> RetrieveAllUsers() {
+        throw new NotImplementedException();
+    }
+
+    public Collection<PlayerInternalData> getUnpairedClients() {
+        throw new NotImplementedException();
+    }
+
+    public Collection<PlayerInternalData> getPairedClients() {
+        throw new NotImplementedException();
+    }
+
+    public boolean ClientLoggedIn(String name) {
+        throw new NotImplementedException();
+    }
+
+    public ArrayList<String> RetrieveAllUsersNames() {
         ArrayList<String> PIDS = new ArrayList<>();
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
@@ -265,42 +283,34 @@ public class JDBCHandler {
         return databaseServerAddressString;
     }
 
-    //********************* SETTERS ********************************\\
-    public void setDatabaseServerAddressString(String databaseServerAddressString) {
-        this.databaseServerAddressString = databaseServerAddressString;
-        refreshConnectionString();
-    }
-
-    public String getDatabasePortString() {
-        return databasePortString;
-    }
-
-    public void setDatabasePortString(String databasePortString) {
-        this.databasePortString = databasePortString;
-        refreshConnectionString();
+    public String getConnectionString() {
+        return connectionString;
     }
 
     public String getDatabaseNameString() {
         return databaseNameString;
     }
 
+    public String getDatabasePortString() {
+        return databasePortString;
+    }
+
+    //********************* SETTERS ********************************\\
+    public void setDatabaseServerAddressString(String databaseServerAddressString) {
+        this.databaseServerAddressString = databaseServerAddressString;
+        refreshConnectionString();
+    }
+    public void setDatabasePortString(String databasePortString) {
+        this.databasePortString = databasePortString;
+        refreshConnectionString();
+    }
     public void setDatabaseNameString(String databaseNameString) {
         this.databaseNameString = databaseNameString;
         refreshConnectionString();
     }
-
-    public String getConnectionString() {
-        return connectionString;
-    }
-
-    public String getUsername() {
-        return username;
-    }
-
     public void setUsername(String username) {
         this.username = username;
     }
-
     public void setPassword(String password) {
         this.password = password;
     }

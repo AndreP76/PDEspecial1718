@@ -3,6 +3,8 @@ package Comunication.ChatUtils.RMIChat;
 import Colections.EventQueue;
 import Comunication.ChatUtils.TCPChat.ChatPacket;
 import Comunication.JDBCUtils.PlayerInternalData;
+import Comunication.RMIInterfaces.RMIChatClientInterface;
+import Comunication.RMIInterfaces.RMIChatRoomInterface;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;

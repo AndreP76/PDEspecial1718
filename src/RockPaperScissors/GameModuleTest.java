@@ -1,5 +1,7 @@
 package RockPaperScissors;
 
+import Utils.StringUtils;
+
 import java.util.Observable;
 import java.util.Observer;
 import java.util.Scanner;
@@ -17,6 +19,7 @@ public class GameModuleTest implements Observer {
 
     /*Launcher method*/
     public static void main(String[] args) {
+        System.out.println("Random String : " + StringUtils.RandomAlfa(32));
         Game G = new Game(null, null);
         GameModuleTest GMT = new GameModuleTest(G);
         GMT.FirstPlay();

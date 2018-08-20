@@ -1,6 +1,8 @@
 package Comunication.ChatUtils.RMIChat;
 
 import Comunication.ChatUtils.TCPChat.ChatPacket;
+import Comunication.RMIInterfaces.RMIChatClientInterface;
+import Comunication.RMIInterfaces.RMIChatRoomInterface;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
