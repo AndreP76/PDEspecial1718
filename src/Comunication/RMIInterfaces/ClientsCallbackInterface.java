@@ -1,6 +1,7 @@
 package Comunication.RMIInterfaces;
 
-import Comunication.JDBCUtils.PlayerInternalData;
+import Comunication.JDBCUtils.InternalData.PairInternalData;
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
@@ -9,17 +10,17 @@ public interface ClientsCallbackInterface extends Remote {//clients must impleme
 
     PlayerInternalData getClientInfo() throws RemoteException;
 
-    void onDuplicateLogin();
+    void onDuplicateLogin() throws RemoteException;
 
-    void onSQLError();
+    void onSQLError() throws RemoteException;
 
-    void onDuplicateLogout();
+    void onDuplicateLogout() throws RemoteException;
 
-    void onInvalidPairRequest();
+    void onInvalidPairRequest() throws RemoteException;
 
-    boolean onPairRequested(PlayerInternalData clientInfo, RMIManagementServerInterface managementServerMain);
+    boolean onPairRequested(PlayerInternalData clientInfo, RMIManagementServerInterface managementServerMain) throws RemoteException;
 
-    void onPairRequestRejected();
+    void onPairRequestRejected() throws RemoteException;
 
-    void onPairRequestAccepted();
+    void onPairRequestAccepted(PairInternalData PID) throws RemoteException;
 }

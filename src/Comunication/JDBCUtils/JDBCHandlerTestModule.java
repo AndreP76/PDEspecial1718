@@ -4,6 +4,7 @@ import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 
 import java.util.ArrayList;
 import java.util.Scanner;
@@ -15,18 +16,18 @@ public class JDBCHandlerTestModule {
         if (PID == null) {
             System.out.println("Player data empty");
         } else {
-            System.out.println("Player " + PID.name);
-            System.out.println("ID : " + PID.ID);
-            System.out.println("Real name : " + PID.realName);
-            System.out.println("Games Won/Lost : " + PID.wonRounds + "/" + PID.lostRounds);
-            System.out.println("Logged in : " + (PID.loggedIn ? "True" : "False"));
+            System.out.println("Player " + PID.getName());
+            System.out.println("ID : " + PID.getID());
+            System.out.println("Real name : " + PID.getRealName());
+            System.out.println("Games Won/Lost : " + PID.getWonRounds() + "/" + PID.getLostRounds());
+            System.out.println("Logged in : " + (PID.getLoggedIn() ? "True" : "False"));
         }
     }
 
     private static void ShowPlayersInfo(Iterable<PlayerInternalData> PIDS) {
         if (PIDS != null) {
             for (PlayerInternalData PID : PIDS) {
-                System.out.println(PID.ID + "\t" + PID.name + "\t" + PID.realName + "\t" + PID.password + "\t" + PID.loggedIn + "\t" + PID.wonRounds + "w\t" + PID.lostRounds + "l\t");
+                System.out.println(PID.getID() + "\t" + PID.getName() + "\t" + PID.getRealName() + "\t" + PID.getPassword() + "\t" + PID.getLoggedIn() + "\t" + PID.getWonRounds() + "w\t" + PID.getLostRounds() + "l\t");
             }
         } else System.out.println("Empty users data...");
     }

@@ -2,7 +2,7 @@ package Comunication.ChatUtils.RMIChat;
 
 import Colections.EventQueue;
 import Comunication.ChatUtils.TCPChat.ChatPacket;
-import Comunication.JDBCUtils.PlayerInternalData;
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.RMIInterfaces.RMIChatClientInterface;
 import Comunication.RMIInterfaces.RMIChatRoomInterface;
 

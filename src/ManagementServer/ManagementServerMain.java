@@ -4,19 +4,27 @@ import Comunication.ChatUtils.RMIChat.RMIChatRoomModule;
 import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
+import Comunication.JDBCUtils.InternalData.PairInternalData;
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.JDBCUtils.JDBCHandler;
-import Comunication.JDBCUtils.PlayerInternalData;
 import Comunication.RMIHandlers.RMIHeartbeatService;
 import Comunication.RMIInterfaces.ClientsCallbackInterface;
 import Comunication.RMIInterfaces.RMIManagementServerInterface;
+import Utils.StringUtils;
 
 import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Scanner;
 
 public class ManagementServerMain extends UnicastRemoteObject implements RMIManagementServerInterface {
+    public static final String MANAGEMENT_SERVER_RMI = "MSRMI";
     private JDBCHandler DBHandler;
     private RMIHeartbeatService RMIHS;
 
@@ -29,6 +37,14 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
         this.RMIHS = RMIHS;
         this.RMICRM = RMICRM;
         ClientInterfaces = new HashMap<>();
+        if (LocateRegistry.getRegistry() == null) {
+            LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+        }
+        try {
+            Naming.rebind("//localhost/" + MANAGEMENT_SERVER_RMI, this);
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void main(String args[]) {
@@ -51,7 +67,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                     RMIHeartbeatService RMIHS = new RMIHeartbeatService(DBHandler.getConnectionString());
                     System.out.println("Heartbeat service ready!");
                     try {
-                        RMIChatRoomModule RMICRM = new RMIChatRoomModule("127.0.0.1", "RMIC");//TODO : Talvez receber estes parametros por linha de comandos?
+                        RMIChatRoomModule RMICRM = new RMIChatRoomModule("RMIC", "127.0.0.1");//TODO : Talvez receber estes parametros por linha de comandos?
                         System.out.println("ChatRoom service ready!");
 
                         ManagementServerMain Msm = new ManagementServerMain(DBHandler, RMIHS, RMICRM);
@@ -60,10 +76,22 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                         //GUI.run maybe ?
                         //*******************************NOW TO DO ACTUAL SERVER THINGS*******************************\\
 
+                        Scanner sIN = new Scanner(System.in);
+                        while (true) {
+                            System.out.print("Command : ");
+                            String command = sIN.nextLine();
+                            if (command.equals("exit")) {
+                                Msm.finalize();
+                                System.exit(0);
+                                return;
+                            }
+                        }
                     } catch (RemoteException e) {
                         System.out.println("Remote error on chat service! Shutting down...");
                     } catch (MalformedURLException e) {
                         System.out.println("Wrong URL on chat service! Shutting down...");
+                    } catch (Throwable throwable) {
+                        throwable.printStackTrace();
                     }
                 } catch (RemoteException e) {
                     System.out.println("Error on heartbeat service! Shutting down...");
@@ -75,6 +103,12 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
             usage();
             return;
         }
+    }
+
+    @Override
+    protected void finalize() throws Throwable {
+        super.finalize();
+        Naming.unbind("//localhost/" + MANAGEMENT_SERVER_RMI);
     }
 
     private static void usage() {
@@ -93,7 +127,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     }
 
     @Override
-    public boolean login(ClientsCallbackInterface CCI, String name, String password) {
+    public boolean login(ClientsCallbackInterface CCI, String name, String password) throws RemoteException {
         try {
             if (DBHandler.LoginUser(name, password)) {
                 ClientInterfaces.put(name, CCI);
@@ -109,7 +143,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     }
 
     @Override
-    public boolean logout(ClientsCallbackInterface CCI, String name) {
+    public boolean logout(ClientsCallbackInterface CCI, String name) throws RemoteException {
         try {
             return DBHandler.LogoutUser(name);
         } catch (AuthenticationSQLError authenticationSQLError) {
@@ -122,8 +156,8 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     }
 
     @Override
-    public Collection<PlayerInternalData> getActivePlayers() {
-        return DBHandler.RetrieveAllUsers();
+    public Collection<String> getActivePlayers() {
+        return DBHandler.RetrieveAllUsersNames();
     }
 
     @Override
@@ -132,32 +166,43 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     }
 
     @Override
-    public Collection<PlayerInternalData> getActivePlayersPaired() {
+    public Collection<PlayerInternalData> getActivePlayersPaired() throws SQLException {
         return DBHandler.getPairedClients();
     }
 
     @Override
-    public Collection<PlayerInternalData> getUnpairedActivePlayers() {
+    public Collection<PlayerInternalData> getUnpairedActivePlayers() throws SQLException {
         return DBHandler.getUnpairedClients();
     }
 
     @Override
     public void requestPair(PlayerInternalData player, ClientsCallbackInterface requester) throws RemoteException {
-        //oh boy oh boy, what to do...
-        if (DBHandler.ClientLoggedIn(requester.getClientInfo().getName())) {//requester is logged in
-            if (ClientInterfaces.containsKey(player.getName())) {//target is registred in the server interfaces
-                ClientsCallbackInterface cci = ClientInterfaces.get(player.getName());
-                if (cci.onPairRequested(requester.getClientInfo(), this)) {
-                    //write pair to db
-                    //TODO : Create PairInternalDetails, to send to clients
-                    //has PlayerInternalData and pair ID and pair token
-                    cci.onPairRequestAccepted();
-                } else {//the client rejected
-                    cci.onPairRequestRejected();
+        try {
+            if (DBHandler.ClientLoggedIn(requester.getClientInfo().getName())) {//requester is logged in
+                if (ClientInterfaces.containsKey(player.getName())) {//target is registred in the server interfaces
+                    ClientsCallbackInterface cci = ClientInterfaces.get(player.getName());
+                    if (cci.onPairRequested(requester.getClientInfo(), this)) {
+                        try {
+                            PairInternalData PID = DBHandler.createNewPair(cci.getClientInfo(), requester.getClientInfo(), StringUtils.RandomAlfa(32));
+                            cci.onPairRequestAccepted(PID);
+                            requester.onPairRequestAccepted(PID);
+                        } catch (SQLException e) {
+                            e.printStackTrace();
+                        }
+                    } else {//the client rejected
+                        cci.onPairRequestRejected();
+                    }
+                } else {
+                    requester.onInvalidPairRequest();
                 }
-            } else {
-                requester.onInvalidPairRequest();
             }
+        } catch (AuthenticationSQLError authenticationSQLError) {
+            authenticationSQLError.printStackTrace();
         }
+    }
+
+    @Override
+    public PlayerInternalData getPlayerData(String name) {
+        return DBHandler.RetrievePlayer(name);
     }
 }

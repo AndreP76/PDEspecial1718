@@ -1,9 +1,10 @@
 package Comunication.RMIInterfaces;
 
-import Comunication.JDBCUtils.PlayerInternalData;
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
+import java.sql.SQLException;
 import java.util.Collection;
 
 public interface RMIManagementServerInterface extends Remote {
@@ -15,13 +16,15 @@ public interface RMIManagementServerInterface extends Remote {
 
     boolean logout(ClientsCallbackInterface CCI, String name) throws RemoteException;
 
-    Collection<PlayerInternalData> getActivePlayers() throws RemoteException;
+    Collection<String> getActivePlayers() throws RemoteException;
 
     Collection<PlayerInternalData> getActivePlayersStatus() throws RemoteException;
 
-    Collection<PlayerInternalData> getActivePlayersPaired() throws RemoteException;
+    Collection<PlayerInternalData> getActivePlayersPaired() throws RemoteException, SQLException;
 
-    Collection<PlayerInternalData> getUnpairedActivePlayers() throws RemoteException;
+    Collection<PlayerInternalData> getUnpairedActivePlayers() throws RemoteException, SQLException;
 
     void requestPair(PlayerInternalData player, ClientsCallbackInterface requester) throws RemoteException;
+
+    PlayerInternalData getPlayerData(String name);
 }
