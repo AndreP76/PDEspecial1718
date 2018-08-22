@@ -26,5 +26,5 @@ public interface RMIManagementServerInterface extends Remote {
 
     void requestPair(PlayerInternalData player, ClientsCallbackInterface requester) throws RemoteException;
 
-    PlayerInternalData getPlayerData(String name);
+    PlayerInternalData getPlayerData(String name) throws RemoteException;
 }

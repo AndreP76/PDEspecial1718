@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.InternalData;
 
-public class PlayerInternalData {
+import java.io.Serializable;
+
+public class PlayerInternalData implements Serializable {
     public static final String UNKNOWN_DATA_STRING = "*********************************";
     public static final int UNKNOWN_DATA_INT = -1;
     int wonRounds;

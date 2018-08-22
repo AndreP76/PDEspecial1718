@@ -2,9 +2,10 @@ package Colections;
 
 import sun.misc.Queue;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 
-public class EventQueue<T> extends Queue<T> implements EventCollectionInterface {
+public class EventQueue<T> extends Queue<T> implements EventCollectionInterface, Serializable {
     ArrayList<EventCollectionListenerInterface> listeners;
 
     public EventQueue() {

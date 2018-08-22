@@ -6,7 +6,6 @@ import Colections.EventQueue;
 import Comunication.ChatUtils.TCPChat.ChatPacket;
 
 import java.net.MalformedURLException;
-import java.rmi.NotBoundException;
 import java.rmi.RemoteException;
 import java.util.Scanner;
 
@@ -35,6 +34,7 @@ public class RMIChatTest {
 
     private static void StartClient() {
         EventQueue<ChatPacket> messagesQueue = new EventQueue<>();
+        EventQueue<String> clients = new EventQueue<>();
         messagesQueue.addListener(new EventCollectionListenerInterface() {
             @Override
             public void onNewElement(EventCollectionInterface evi) {
@@ -50,8 +50,8 @@ public class RMIChatTest {
         Scanner sIN = new Scanner(System.in);
         System.out.println("Name : ");
         name = sIN.nextLine();
-        try {
-            RMIChatClientModule RMICCM = new RMIChatClientModule(name, "localhost", "RMICR", messagesQueue);
+        /*try {
+            RMIChatClientModule RMICCM = new RMIChatClientModule(name, "localhost", "RMICR",this);
             System.out.print("New message (will be sent to general) : ");
             RMICCM.sendMessage(sIN.nextLine());
             System.out.println("Message sent");
@@ -61,6 +61,6 @@ public class RMIChatTest {
             System.out.println("Invalid IP or service name!");
         } catch (NotBoundException e) {
             System.out.println("NotBoundException, whatever that is...");
-        }
+        }*/
     }
 }

@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.InternalData;
 
-public class PairInternalData {
+import java.io.Serializable;
+
+public class PairInternalData implements Serializable {
     PlayerInternalData PlayerOne;
     PlayerInternalData PlayerTwo;
     String token;
