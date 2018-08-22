@@ -41,8 +41,7 @@ public class LoginForm extends JFrame implements Serializable {
                             }
                         });
                         thisPlayerID = this.master.getPlayerData(name);
-                        //this.master.logout(new LoginCallbackHandler(),name);
-                        ChatForm ccf = new ChatForm(chatServer, thisPlayerID);
+                        ChatTest ccf = new ChatTest(chatServer, thisPlayerID);
                         this.setVisible(false);
                     } else {
                         JOptionPane.showMessageDialog(null, "Invalid login credentials!");

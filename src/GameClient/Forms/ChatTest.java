@@ -4,7 +4,6 @@ import Comunication.ChatUtils.RMIChat.RMIChatClientModule;
 import Comunication.ChatUtils.TCPChat.ChatPacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.RMIInterfaces.RMIChatRoomInterface;
-import Utils.StringUtils;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -12,9 +11,8 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.net.MalformedURLException;
-import java.rmi.Naming;
-import java.rmi.NotBoundException;
+import java.awt.event.WindowEvent;
+import java.awt.event.WindowListener;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
@@ -29,40 +27,45 @@ public class ChatTest {
     private javax.swing.JTextField messageBox;
     private JScrollPane jScrollPane1;//wtv this is
     private HashMap<String, JTextArea> namesToTextarea;
+    private PlayerInternalData playerData;
     private String currentTarget;
 
-    public ChatTest() {
+    public ChatTest(RMIChatRoomInterface chatServer, PlayerInternalData playerData) {
         chatWindow = new JFrame();
         namesToTextarea = new HashMap<>();
         setupUI(chatWindow);
+        this.playerData = playerData;
+        chatWindow.setTitle(playerData.getName());
         try {
-            chatClient = new RMIChatClientModule((RMIChatRoomInterface) (Naming.lookup("//localhost/RMIC")), new PlayerInternalData(StringUtils.RandomAlfa(16)));
+            chatClient = new RMIChatClientModule(chatServer, playerData);
         } catch (RemoteException e) {
-            e.printStackTrace();
-        } catch (NotBoundException e) {
-            e.printStackTrace();
-        } catch (MalformedURLException e) {
             e.printStackTrace();
         }
 
-        chatClient.setOnNewClientListerner(s -> {
+        chatClient.setOnNewClientListener(s -> {
             System.out.println("New client listener called");
             playerListModel.addElement(s);
             playersList.setModel(playerListModel);
         });
-        chatClient.setOnNewMessageListerner(chatPacket -> {
+        chatClient.setOnNewMessageListener(chatPacket -> {
             System.out.println("New message listener called");
             JTextArea jta = findTextarea(chatPacket.getTarget().equals(ChatPacket.GENERAL_STRING) ? chatPacket.getTarget() : chatPacket.getSender());
             jta.append(chatPacket.getSender() + " :: " + chatPacket.getMessageContents() + "\n");
         });
-
+        chatClient.setOnClientLeftListener(s -> {
+            playerListModel.removeElement(s);
+            playersList.setModel(playerListModel);
+            if (namesToTextarea.containsKey(s)) {
+                findTextarea(s).append(s + " has left...\n");
+            }
+        });
         btnSend.addActionListener(act -> {
             System.out.println("Send message listener called");
             try {
                 if (!messageBox.getText().isEmpty()) {
                     chatClient.sendMessage(currentTarget, messageBox.getText());
                     JTextArea jta = findTextarea(currentTarget);
-                    jta.append("You :: " + messageBox.getText());
+                    jta.append("You :: " + messageBox.getText() + "\n");
                     messageBox.setText("");
                 }
             } catch (RemoteException e) {
@@ -79,14 +82,16 @@ public class ChatTest {
         playersList.addListSelectionListener(new ListSelectionListener() {
             @Override
             public void valueChanged(ListSelectionEvent listSelectionEvent) {
-                String selectedName = playerListModel.elementAt(listSelectionEvent.getFirstIndex());
-                if (!namesToTextarea.containsKey(selectedName)) {//already a tab open
-                    addTextarea(selectedName);
-                }
-                for (Component c : chatTabs.getComponents()) {
-                    if (c.getName().equals(selectedName)) {
-                        chatTabs.setSelectedComponent(c);
-                        break;
+                if (playersList.getSelectedIndex() >= 0) {
+                    String selectedName = playerListModel.elementAt(playersList.getSelectedIndex());
+                    if (!namesToTextarea.containsKey(selectedName)) {//already a tab open
+                        addTextarea(selectedName);
+                    }
+                    for (Component c : chatTabs.getComponents()) {
+                        if (c.getName().equals(selectedName)) {
+                            chatTabs.setSelectedComponent(c);
+                            break;
+                        }
                     }
                 }
             }
@@ -94,12 +99,50 @@ public class ChatTest {
 
         try {
             for (String c : chatClient.getClients()) {
-                playerListModel.addElement(c);
+                if (!c.equals(playerData.getName()))
+                    playerListModel.addElement(c);
             }
             playersList.setModel(playerListModel);
         } catch (RemoteException e) {
             e.printStackTrace();
         }
+
+        chatWindow.addWindowListener(new WindowListener() {
+            @Override
+            public void windowOpened(WindowEvent windowEvent) {
+
+            }
+
+            @Override
+            public void windowClosing(WindowEvent windowEvent) {
+                chatClient.leave();
+            }
+
+            @Override
+            public void windowClosed(WindowEvent windowEvent) {
+
+            }
+
+            @Override
+            public void windowIconified(WindowEvent windowEvent) {
+
+            }
+
+            @Override
+            public void windowDeiconified(WindowEvent windowEvent) {
+
+            }
+
+            @Override
+            public void windowActivated(WindowEvent windowEvent) {
+
+            }
+
+            @Override
+            public void windowDeactivated(WindowEvent windowEvent) {
+
+            }
+        });
     }
 
     private void setupUI(JFrame jf) {
@@ -162,7 +205,6 @@ public class ChatTest {
         jf.pack();
         jf.setVisible(true);
     }
-
     private JTextArea findTextarea(String s) {
         //if there is no text area, create new panel with s as name,
         // add to tabs, and add a jtextarea to dictionary
@@ -173,7 +215,6 @@ public class ChatTest {
             return findTextarea(s);
         }
     }
-
     private void addTextarea(String s) {
         //create new panel with s as name,
         //add to tabs, and add a jtextarea to dictionary

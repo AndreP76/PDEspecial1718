@@ -18,27 +18,28 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     private static final long serialVersionUID = 65268857L;
     private RMIChatRoomInterface chatServer;
     private PlayerInternalData PID;
-    private Consumer<ChatPacket> onNewMessageListerner;
-    private Consumer<String> onNewClientListerner;
+    private Consumer<ChatPacket> onNewMessageListener;
+    private Consumer<String> onNewClientListener;
+    private Consumer<String> onClientLeftListener;
 
-    public RMIChatClientModule(String clientName, String serverIP, String serviceName, Consumer<ChatPacket> onNewMessageListerner, Consumer<String> onNewClientListerner) throws RemoteException, MalformedURLException, NotBoundException {
-        this(new PlayerInternalData(clientName, 1), serverIP, serviceName, onNewMessageListerner, onNewClientListerner);
+    public RMIChatClientModule(String clientName, String serverIP, String serviceName, Consumer<ChatPacket> onNewMessageListener, Consumer<String> onNewClientListener) throws RemoteException, MalformedURLException, NotBoundException {
+        this(new PlayerInternalData(clientName, 1), serverIP, serviceName, onNewMessageListener, onNewClientListener);
     }
 
-    public RMIChatClientModule(PlayerInternalData pid, String serverIP, String serviceName, Consumer<ChatPacket> onNewMessageListerner, Consumer<String> onNewClientListerner) throws RemoteException, MalformedURLException, NotBoundException {
+    public RMIChatClientModule(PlayerInternalData pid, String serverIP, String serviceName, Consumer<ChatPacket> onNewMessageListener, Consumer<String> onNewClientListener) throws RemoteException, MalformedURLException, NotBoundException {
         chatServer = (RMIChatRoomInterface) Naming.lookup("//" + serverIP + "/" + serviceName);
         PID = pid;
         chatServer.newClient(PID.getName(), this);
-        this.onNewClientListerner = onNewClientListerner;
-        this.onNewMessageListerner = onNewMessageListerner;
+        this.onNewClientListener = onNewClientListener;
+        this.onNewMessageListener = onNewMessageListener;
     }
 
-    public RMIChatClientModule(RMIChatRoomInterface chatServer, PlayerInternalData pid, Consumer<ChatPacket> onNewMessageListerner, Consumer<String> onNewClientListerner) throws RemoteException {
+    public RMIChatClientModule(RMIChatRoomInterface chatServer, PlayerInternalData pid, Consumer<ChatPacket> onNewMessageListener, Consumer<String> onNewClientListener) throws RemoteException {
         this.chatServer = chatServer;
         PID = pid;
         this.chatServer.newClient(PID.getName(), this);
-        this.onNewClientListerner = onNewClientListerner;
-        this.onNewMessageListerner = onNewMessageListerner;
+        this.onNewClientListener = onNewClientListener;
+        this.onNewMessageListener = onNewMessageListener;
     }
 
     public RMIChatClientModule(RMIChatRoomInterface chatServer, PlayerInternalData pid) throws RemoteException {
@@ -47,9 +48,9 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
 
     @Override
     public void newMessage(ChatPacket cp) {
-        if (onNewMessageListerner != null) {
+        if (onNewMessageListener != null) {
             System.out.println("message listener not null");
-            onNewMessageListerner.accept(cp);
+            onNewMessageListener.accept(cp);
         } else {
             System.out.println("message listener null");
         }
@@ -71,11 +72,21 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     }
 
     public void newClient(String newClient) {
-        if (onNewClientListerner != null) {
+        if (onNewClientListener != null) {
             System.out.println("client listener not null");
-            onNewClientListerner.accept(newClient);
+            onNewClientListener.accept(newClient);
         } else {
             System.out.println("client listener null");
+        }
+    }
+
+    @Override
+    public void clientLeft(String clientName) {
+        if (onClientLeftListener != null) {
+            System.out.println("client left listener not null");
+            onClientLeftListener.accept(clientName);
+        } else {
+            System.out.println("client left listener null");
         }
     }
 
@@ -83,13 +94,26 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
         return chatServer.getClients();
     }
 
-    public void setOnNewClientListerner(Consumer<String> onNewClientListerner) {//LULZ typo
+    public void setOnNewClientListener(Consumer<String> onNewClientListener) {//LULZ typo
         System.out.println("setting client listener");
-        this.onNewClientListerner = onNewClientListerner;
+        this.onNewClientListener = onNewClientListener;
     }
 
-    public void setOnNewMessageListerner(Consumer<ChatPacket> onNewMessageListerner) {
+    public void setOnNewMessageListener(Consumer<ChatPacket> onNewMessageListener) {
         System.out.println("setting message listener");
-        this.onNewMessageListerner = onNewMessageListerner;
+        this.onNewMessageListener = onNewMessageListener;
+    }
+
+    public void setOnClientLeftListener(Consumer<String> onClientLeftListener) {
+        System.out.println("setting client left listener");
+        this.onClientLeftListener = onClientLeftListener;
+    }
+
+    public void leave() {
+        try {
+            chatServer.removeClient(PID.getName());
+        } catch (RemoteException e) {
+            e.printStackTrace();
+        }
     }
 }

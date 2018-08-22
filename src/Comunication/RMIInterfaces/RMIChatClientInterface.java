@@ -9,6 +9,7 @@ import java.rmi.RemoteException;
 public interface RMIChatClientInterface extends Remote {
     void newMessage(ChatPacket cp) throws RemoteException;
     PlayerInternalData getClientDetails() throws RemoteException;
-
     void newClient(String newClient) throws RemoteException;
+
+    void clientLeft(String clientName) throws RemoteException;
 }

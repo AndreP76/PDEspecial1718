@@ -42,6 +42,17 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
     }
 
     @Override
+    public void removeClient(String clientName) throws RemoteException {
+        System.out.println("DEBUG :: " + clientName + " has left!");
+        if (clientsToInterface.containsKey(clientName)) {
+            clientsToInterface.remove(clientName);
+            for (RMIChatClientInterface c : clientsToInterface.values()) {
+                c.clientLeft(clientName);
+            }
+        }
+    }
+
+    @Override
     public void newMessage(ChatPacket message) throws RemoteException {
         System.out.println("DEBUG :: New message arrived [" + message.getSender() + " :: " + message.getMessageContents() + "]");
         if (message.getTarget().equals(ChatPacket.GENERAL_STRING)) {//send to everyone
@@ -59,6 +70,8 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
     @Override
     public ArrayList<String> getClients() {
         System.out.println("DEBUG :: Client list request");
-        return new ArrayList<>(clientsToInterface.keySet());
+        ArrayList<String> keyset = new ArrayList<>(clientsToInterface.keySet());
+        keyset.add(ChatPacket.GENERAL_STRING);
+        return keyset;
     }
 }

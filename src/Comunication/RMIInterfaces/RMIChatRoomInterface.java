@@ -12,4 +12,6 @@ public interface RMIChatRoomInterface extends Remote {
     void newMessage(ChatPacket message) throws RemoteException;
 
     ArrayList<String> getClients() throws RemoteException;
+
+    void removeClient(String clientName) throws RemoteException;
 }
