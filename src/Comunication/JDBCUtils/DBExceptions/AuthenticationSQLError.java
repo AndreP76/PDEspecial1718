@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.DBExceptions;
 
-public class AuthenticationSQLError extends Exception {
+import java.rmi.RemoteException;
+
+public class AuthenticationSQLError extends RemoteException {
     public AuthenticationSQLError() {
     }
 

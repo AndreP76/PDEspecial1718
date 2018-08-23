@@ -1,9 +1,7 @@
 package ManagementServer;
 
 import Comunication.ChatUtils.RMIChat.RMIChatRoomModule;
-import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
-import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
-import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
+import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.JDBCUtils.JDBCHandler;
@@ -128,31 +126,27 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
     @Override
     public boolean login(ClientsCallbackInterface CCI, String name, String password) throws RemoteException {
-        try {
             if (DBHandler.LoginUser(name, password)) {
                 ClientInterfaces.put(name, CCI);
+                PlayerInternalData PID = DBHandler.RetrievePlayer(name);
+                for (ClientsCallbackInterface c : ClientInterfaces.values()) {
+                    if (!c.getClientInfo().getName().equals(name)) {
+                        c.newPlayerJoined(PID);
+                    }
+                }
                 return true;
             } else return false;
-        } catch (DuplicateLoginException e) {
-            CCI.onDuplicateLogin();
-            return false;
-        } catch (AuthenticationSQLError authenticationSQLError) {
-            CCI.onSQLError();
-            return false;
-        }
     }
 
     @Override
-    public boolean logout(ClientsCallbackInterface CCI, String name) throws RemoteException {
-        try {
-            return DBHandler.LogoutUser(name);
-        } catch (AuthenticationSQLError authenticationSQLError) {
-            CCI.onSQLError();
-            return false;
-        } catch (DuplicateLogoutException e) {
-            CCI.onDuplicateLogout();
-            return false;
+    public boolean logout(String name) throws RemoteException {
+        if (ClientInterfaces.containsKey(name)) {
+            ClientInterfaces.remove(name);
+            for (ClientsCallbackInterface c : ClientInterfaces.values()) {
+                c.playerLeft(new PlayerInternalData(name));
+            }
         }
+        return DBHandler.LogoutUser(name);
     }
 
     @Override
@@ -177,7 +171,6 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
     @Override
     public void requestPair(PlayerInternalData player, ClientsCallbackInterface requester) throws RemoteException {
-        try {
             if (DBHandler.ClientLoggedIn(requester.getClientInfo().getName())) {//requester is logged in
                 if (ClientInterfaces.containsKey(player.getName())) {//target is registred in the server interfaces
                     ClientsCallbackInterface cci = ClientInterfaces.get(player.getName());
@@ -190,15 +183,12 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                             e.printStackTrace();
                         }
                     } else {//the client rejected
-                        cci.onPairRequestRejected();
+                        requester.onPairRequestRejected();
                     }
                 } else {
-                    requester.onInvalidPairRequest();
+                    throw new UnknownUserException(player.getName());
                 }
             }
-        } catch (AuthenticationSQLError authenticationSQLError) {
-            authenticationSQLError.printStackTrace();
-        }
     }
 
     @Override

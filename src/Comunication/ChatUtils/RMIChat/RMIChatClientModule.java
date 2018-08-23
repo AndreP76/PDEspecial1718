@@ -49,10 +49,10 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     @Override
     public void newMessage(ChatPacket cp) {
         if (onNewMessageListener != null) {
-            System.out.println("message listener not null");
+            System.out.println("[CHAT CLIENT] :: message listener not null");
             onNewMessageListener.accept(cp);
         } else {
-            System.out.println("message listener null");
+            System.out.println("[CHAT CLIENT] :: message listener null");
         }
     }
 
@@ -73,20 +73,20 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
 
     public void newClient(String newClient) {
         if (onNewClientListener != null) {
-            System.out.println("client listener not null");
+            System.out.println("[CHAT CLIENT] :: client listener not null");
             onNewClientListener.accept(newClient);
         } else {
-            System.out.println("client listener null");
+            System.out.println("[CHAT CLIENT] :: client listener null");
         }
     }
 
     @Override
     public void clientLeft(String clientName) {
         if (onClientLeftListener != null) {
-            System.out.println("client left listener not null");
+            System.out.println("[CHAT CLIENT] :: client left listener not null");
             onClientLeftListener.accept(clientName);
         } else {
-            System.out.println("client left listener null");
+            System.out.println("[CHAT CLIENT] :: client left listener null");
         }
     }
 
@@ -95,17 +95,17 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     }
 
     public void setOnNewClientListener(Consumer<String> onNewClientListener) {//LULZ typo
-        System.out.println("setting client listener");
+        System.out.println("[CHAT CLIENT] :: setting client listener");
         this.onNewClientListener = onNewClientListener;
     }
 
     public void setOnNewMessageListener(Consumer<ChatPacket> onNewMessageListener) {
-        System.out.println("setting message listener");
+        System.out.println("[CHAT CLIENT] :: setting message listener");
         this.onNewMessageListener = onNewMessageListener;
     }
 
     public void setOnClientLeftListener(Consumer<String> onClientLeftListener) {
-        System.out.println("setting client left listener");
+        System.out.println("[CHAT CLIENT] :: setting client left listener");
         this.onClientLeftListener = onClientLeftListener;
     }
 

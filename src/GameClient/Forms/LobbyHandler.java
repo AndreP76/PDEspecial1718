@@ -29,26 +29,6 @@ public class LobbyHandler extends UnicastRemoteObject implements ClientsCallback
     }
 
     @Override
-    public void onDuplicateLogin() {
-
-    }
-
-    @Override
-    public void onSQLError() {
-
-    }
-
-    @Override
-    public void onDuplicateLogout() {
-
-    }
-
-    @Override
-    public void onInvalidPairRequest() {
-
-    }
-
-    @Override
     public boolean onPairRequested(PlayerInternalData clientInfo, RMIManagementServerInterface managementServerMain) {
         int dialogRes = JOptionPane.showConfirmDialog(null, "Player " + clientInfo.getName() + " wants to play with you", "Pair request", JOptionPane.YES_NO_OPTION);
         return dialogRes == JOptionPane.YES_OPTION;
@@ -79,4 +59,25 @@ public class LobbyHandler extends UnicastRemoteObject implements ClientsCallback
         onPlayerUpdate.accept(PID);
     }
     //</editor-fold>
+
+    public void setPlayerData(PlayerInternalData PID) {
+        this.PID = PID;
+    }
+
+    public void setOnAccept(Consumer<PairInternalData> onAccept) {
+        this.onAccept = onAccept;
+    }
+
+    public void setOnPlayerJoined(Consumer<PlayerInternalData> onPlayerJoined) {
+        this.onPlayerJoined = onPlayerJoined;
+    }
+
+    public void setOnPlayerLeft(Consumer<PlayerInternalData> onPlayerLeft) {
+        this.onPlayerLeft = onPlayerLeft;
+    }
+
+    public void setOnPlayerUpdate(Consumer<PlayerInternalData> onPlayerUpdate) {
+        this.onPlayerUpdate = onPlayerUpdate;
+    }
+
 }

@@ -27,12 +27,12 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void newClient(String clientName, RMIChatClientInterface clientChat) throws RemoteException {
-        System.out.println("DEBUG :: " + clientName + " has registred!");
+        System.out.println("[CHAT SERVER DEBUG] :: " + clientName + " has registred!");
         if (!clientsToInterface.containsKey(clientName)) {
             clientsToInterface.put(clientName, clientChat);
             for (RMIChatClientInterface c : clientsToInterface.values()) {
                 if (c != null && !c.getClientDetails().getName().equals(clientName)) {
-                    System.out.println("DEBUG :: " + c.getClientDetails().getName() + " newClient event called!");
+                    System.out.println("[CHAT SERVER DEBUG] :: " + c.getClientDetails().getName() + " newClient event called!");
                     c.newClient(clientName);
                 }
             }
@@ -43,7 +43,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void removeClient(String clientName) throws RemoteException {
-        System.out.println("DEBUG :: " + clientName + " has left!");
+        System.out.println("[CHAT SERVER DEBUG] :: " + clientName + " has left!");
         if (clientsToInterface.containsKey(clientName)) {
             clientsToInterface.remove(clientName);
             for (RMIChatClientInterface c : clientsToInterface.values()) {
@@ -54,7 +54,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void newMessage(ChatPacket message) throws RemoteException {
-        System.out.println("DEBUG :: New message arrived [" + message.getSender() + " :: " + message.getMessageContents() + "]");
+        System.out.println("[CHAT SERVER DEBUG] :: New message arrived [" + message.getSender() + " :: " + message.getMessageContents() + "]");
         if (message.getTarget().equals(ChatPacket.GENERAL_STRING)) {//send to everyone
             Set<Map.Entry<String, RMIChatClientInterface>> RMIC = clientsToInterface.entrySet();
             for (Map.Entry<String, RMIChatClientInterface> R : RMIC) {
@@ -69,7 +69,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public ArrayList<String> getClients() {
-        System.out.println("DEBUG :: Client list request");
+        System.out.println("[CHAT SERVER DEBUG] :: Client list request");
         ArrayList<String> keyset = new ArrayList<>(clientsToInterface.keySet());
         keyset.add(ChatPacket.GENERAL_STRING);
         return keyset;

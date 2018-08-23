@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.DBExceptions;
 
-public class UnknownUserException extends Exception {
+import java.rmi.RemoteException;
+
+public class UnknownUserException extends RemoteException {
     String name;
 
     public UnknownUserException(String name) {

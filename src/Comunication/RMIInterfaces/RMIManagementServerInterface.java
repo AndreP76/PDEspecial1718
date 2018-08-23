@@ -14,7 +14,7 @@ public interface RMIManagementServerInterface extends Remote {
 
     boolean login(ClientsCallbackInterface CCI, String name, String password) throws RemoteException;
 
-    boolean logout(ClientsCallbackInterface CCI, String name) throws RemoteException;
+    boolean logout(String name) throws RemoteException;
 
     ArrayList<String> getActivePlayers() throws RemoteException;
 

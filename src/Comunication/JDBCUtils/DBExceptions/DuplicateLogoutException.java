@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.DBExceptions;
 
-public class DuplicateLogoutException extends Throwable {
+import java.rmi.RemoteException;
+
+public class DuplicateLogoutException extends RemoteException {
     private String name;
 
     public DuplicateLogoutException(String name) {

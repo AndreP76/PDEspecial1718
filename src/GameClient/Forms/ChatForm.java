@@ -11,8 +11,6 @@ import javax.swing.event.ChangeListener;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
@@ -35,7 +33,7 @@ public class ChatForm {
         namesToTextarea = new HashMap<>();
         setupUI(chatWindow);
         this.playerData = playerData;
-        chatWindow.setTitle(playerData.getName());
+        chatWindow.setTitle(playerData.getName() + " chat");
         try {
             chatClient = new RMIChatClientModule(chatServer, playerData);
         } catch (RemoteException e) {
@@ -107,40 +105,10 @@ public class ChatForm {
             e.printStackTrace();
         }
 
-        chatWindow.addWindowListener(new WindowListener() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
-            public void windowOpened(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowClosing(WindowEvent windowEvent) {
+            public void run() {
                 chatClient.leave();
-            }
-
-            @Override
-            public void windowClosed(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowIconified(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowDeiconified(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowActivated(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowDeactivated(WindowEvent windowEvent) {
-
             }
         });
     }
@@ -169,9 +137,9 @@ public class ChatForm {
         });
         jScrollPane1.setViewportView(playersList);
 
-        messageBox.setText("messageBox");
+        messageBox.setText("");
 
-        btnSend.setText("btnSend");
+        btnSend.setText("Send Message");
 
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(jf.getContentPane());
         jf.getContentPane().setLayout(layout);

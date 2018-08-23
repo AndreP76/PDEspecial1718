@@ -1,6 +1,8 @@
 package Comunication.JDBCUtils.DBExceptions;
 
-public class DuplicateLoginException extends Exception {
+import java.rmi.RemoteException;
+
+public class DuplicateLoginException extends RemoteException {
     private String user;
 
     public DuplicateLoginException(String username) {

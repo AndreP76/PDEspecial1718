@@ -9,8 +9,6 @@ import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.awt.event.WindowEvent;
-import java.awt.event.WindowListener;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,6 +21,11 @@ public class LobbyForm {
     private static final String PAIR_COLUMN_TITLE = "Paired";
     private static final String PLAY_COLUMN_TITLE = "Playing";
     private static final String JOIN_COLUMN_TITLE = "Request Pair";
+    private static final int NAME_COLUMN_INDEX = 0;
+    private static final int WINS_COLUMN_INDEX = 1;
+    private static final int PAIR_COLUMN_INDEX = 2;
+    private static final int PLAY_COLUMN_INDEX = 3;
+    private static final int JOIN_COLUMN_INDEX = 4;
     //<editor-fold desc="Graphical components">
     private javax.swing.JButton btnCancelPair;
     private javax.swing.JLabel currentPairLbl;
@@ -40,70 +43,73 @@ public class LobbyForm {
     private LobbyHandler lobbyHandler;
     private PlayerInternalData PID;
 
-    LobbyForm(RMIManagementServerInterface managementServer, PlayerInternalData PID) {
+    LobbyForm(RMIManagementServerInterface managementServer, PlayerInternalData PID, LobbyHandler lh) {
         this.managementServer = managementServer;
         this.PID = PID;
         jf = new JFrame();
+        jf.setTitle(PID.getName() + " Lobby");
         setupUI(jf);
         jf.setVisible(true);
-        jf.addWindowListener(new WindowListener() {
+        Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
-            public void windowOpened(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowClosing(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowClosed(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowIconified(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowDeiconified(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowActivated(WindowEvent windowEvent) {
-
-            }
-
-            @Override
-            public void windowDeactivated(WindowEvent windowEvent) {
-
+            public void run() {
+                try {
+                    managementServer.logout(PID.getName());
+                } catch (RemoteException e) {
+                    e.printStackTrace();
+                }
             }
         });
-
+        lobbyHandler = lh;
         try {
             ArrayList<PlayerInternalData> pls = managementServer.getActivePlayersData();
             for (PlayerInternalData p : pls) {
-                if (!p.getName().equals(PID.getName())) {
-                    JButton requestButton = new JButton();
-                    requestButton.setText("Request pair");
-                    requestButton.addActionListener(new ActionListener() {
-                        @Override
-                        public void actionPerformed(ActionEvent actionEvent) {
-                            try {
-                                managementServer.requestPair(p, lobbyHandler);
-                            } catch (RemoteException e) {
-                                e.printStackTrace();
-                            }
-                        }
-                    });
-                    playersTableModel.addRow(new Object[]{p.getName(), p.getWonRounds() + "\\" + p.getLostRounds(), p.getPairedPlayer() != null ? "Yes" : "No", "TODO", requestButton});
-                }
+                addPlayerToTable(p);
             }
         } catch (RemoteException e) {
             e.printStackTrace();
+        }
+
+        lobbyHandler.setOnAccept((Pair) -> {
+            //start a gameform and block this form from interacting
+        });
+        lobbyHandler.setOnPlayerJoined(this::addPlayerToTable);
+        lobbyHandler.setOnPlayerLeft((Player) -> {
+            for (int i = 0; i < playersTableModel.getRowCount(); i++) {
+                String s = (String) playersTableModel.getValueAt(i, 0);
+                if (s.equals(Player.getName())) {
+                    playersTableModel.removeRow(i);
+                    break;
+                }
+            }
+        });
+        lobbyHandler.setOnPlayerUpdate((Player) -> {
+            for (int i = 0; i < playersTableModel.getRowCount(); ++i) {
+                String s = (String) playersTableModel.getValueAt(i, 0);
+                if (s.equals(Player.getName())) {
+                    playersTableModel.removeRow(i);
+                    addPlayerToTable(Player);
+                    break;
+                }
+            }
+        });
+    }
+
+    private void addPlayerToTable(PlayerInternalData p) {
+        if (!p.getName().equals(PID.getName())) {
+            JButton requestButton = new JButton();
+            requestButton.setText("Request pair");
+            requestButton.addActionListener(new ActionListener() {
+                @Override
+                public void actionPerformed(ActionEvent actionEvent) {
+                    try {
+                        managementServer.requestPair(p, lobbyHandler);
+                    } catch (RemoteException e) {
+                        e.printStackTrace();
+                    }
+                }
+            });
+            playersTableModel.addRow(new Object[]{p.getName(), p.getWonRounds() + "\\" + p.getLostRounds(), p.getPairedPlayer() != null ? "Yes" : "No", "TODO", requestButton});
         }
     }
 

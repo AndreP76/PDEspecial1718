@@ -10,14 +10,6 @@ public interface ClientsCallbackInterface extends Remote {//clients must impleme
 
     PlayerInternalData getClientInfo() throws RemoteException;
 
-    void onDuplicateLogin() throws RemoteException;
-
-    void onSQLError() throws RemoteException;
-
-    void onDuplicateLogout() throws RemoteException;
-
-    void onInvalidPairRequest() throws RemoteException;
-
     boolean onPairRequested(PlayerInternalData clientInfo, RMIManagementServerInterface managementServerMain) throws RemoteException;
 
     void onPairRequestRejected() throws RemoteException;
