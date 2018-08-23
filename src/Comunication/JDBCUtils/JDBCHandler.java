@@ -11,6 +11,7 @@ import java.sql.*;
 import java.util.ArrayList;
 
 public class JDBCHandler {
+    private static final long serialVersionUID = 56855656L;
     String databaseServerAddressString;
     String databasePortString;
     String databaseNameString = "PD";
@@ -49,18 +50,7 @@ public class JDBCHandler {
         }
     }
 
-    //Create user-
-    //login user-
-    //logout user-
-    //delete user-
-    //Get player details by name-
-    //Get player details by ID-
-    //Get player quick details (username, log status)
-
-    //Get all players name
-    //Get all players quick details
-    //Get all players details
-
+    //<editor-fold desc="Users">
     @Deprecated
     //Either fix or delete. Preferably delete
     public boolean CreateUser(PlayerInternalData PID) {
@@ -247,6 +237,21 @@ public class JDBCHandler {
         }
     }
 
+    public ArrayList<PlayerInternalData> RetrieveActiveUsersFull() {
+        ArrayList<PlayerInternalData> PIDS = new ArrayList<>();
+        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
+            Statement sqlQuery = conn.createStatement();
+            String query = "SELECT Name,WonRounds,RealName,LostRounds,ID,LoggedIn FROM Users WHERE LoggedIn = 1";
+            ResultSet rs = sqlQuery.executeQuery(query);
+            while (rs.next()) {
+                PIDS.add(new PlayerInternalData(rs.getInt("ID"), rs.getString("RealName"), rs.getString("Name"), rs.getInt("WonRounds"), rs.getInt("LostRounds"), rs.getInt("LoggedIn")));
+            }
+            return PIDS;
+        } catch (SQLException sqlex) {
+            return null;
+        }
+    }
+
     public ArrayList<PlayerInternalData> getUnpairedClients() throws SQLException {
         ArrayList<PlayerInternalData> PIDS = new ArrayList<>();
         try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
@@ -303,8 +308,8 @@ public class JDBCHandler {
         }
     }
 
-    //***************************|PAIRS|****************************\\
-
+    //</editor-fold>
+    //<editor-fold desc="Pairs">
     public PairInternalData getPair(String token) throws SQLException {
         try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
             Statement S = con.createStatement();
@@ -367,7 +372,8 @@ public class JDBCHandler {
         }
     }
 
-    //********************* GETTERS ********************************\\
+    //</editor-fold>
+    //<editor-fold desc="Getters">
     public String getDatabaseServerAddressString() {
         return databaseServerAddressString;
     }
@@ -380,7 +386,9 @@ public class JDBCHandler {
     public String getDatabasePortString() {
         return databasePortString;
     }
-    //********************* SETTERS ********************************\\
+
+    //</editor-fold>
+    //<editor-fold desc="Setters">
     public void setDatabaseServerAddressString(String databaseServerAddressString) {
         this.databaseServerAddressString = databaseServerAddressString;
         refreshConnectionString();
@@ -400,8 +408,10 @@ public class JDBCHandler {
         this.password = password;
     }
 
-    //********************** MISC **********************************\\
+    //</editor-fold>
+    //<editor-fold desc="Miscellaneous">
     private void refreshConnectionString() {
         connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
     }
+    //</editor-fold>
 }

@@ -23,4 +23,10 @@ public interface ClientsCallbackInterface extends Remote {//clients must impleme
     void onPairRequestRejected() throws RemoteException;
 
     void onPairRequestAccepted(PairInternalData PID) throws RemoteException;
+
+    void newPlayerJoined(PlayerInternalData PID) throws RemoteException;
+
+    void playerLeft(PlayerInternalData PID) throws RemoteException;
+
+    void playerUpdate(PlayerInternalData PID) throws RemoteException;
 }

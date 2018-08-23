@@ -16,7 +16,7 @@ import java.awt.event.WindowListener;
 import java.rmi.RemoteException;
 import java.util.HashMap;
 
-public class ChatTest {
+public class ChatForm {
     private JFrame chatWindow;
     private RMIChatClientModule chatClient;
 
@@ -30,7 +30,7 @@ public class ChatTest {
     private PlayerInternalData playerData;
     private String currentTarget;
 
-    public ChatTest(RMIChatRoomInterface chatServer, PlayerInternalData playerData) {
+    public ChatForm(RMIChatRoomInterface chatServer, PlayerInternalData playerData) {
         chatWindow = new JFrame();
         namesToTextarea = new HashMap<>();
         setupUI(chatWindow);

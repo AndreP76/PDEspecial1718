@@ -9,7 +9,7 @@ import java.io.Serializable;
 
 public class LoginCallbackHandler implements ClientsCallbackInterface, Serializable {
     LoginCallbackHandler() {//helper class because RMI is stupid
-
+        //TODO : Review the interfaces. Lots of stuff is not needed
     }
 
     @Override
@@ -49,6 +49,21 @@ public class LoginCallbackHandler implements ClientsCallbackInterface, Serializa
 
     @Override
     public void onPairRequestAccepted(PairInternalData PID) {
+
+    }
+
+    @Override
+    public void newPlayerJoined(PlayerInternalData PID) {
+
+    }
+
+    @Override
+    public void playerLeft(PlayerInternalData PID) {
+
+    }
+
+    @Override
+    public void playerUpdate(PlayerInternalData PID) {
 
     }
 }

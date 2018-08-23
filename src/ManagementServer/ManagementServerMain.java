@@ -19,7 +19,7 @@ import java.rmi.registry.LocateRegistry;
 import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.sql.SQLException;
-import java.util.Collection;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -156,22 +156,22 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     }
 
     @Override
-    public Collection<String> getActivePlayers() {
+    public ArrayList<String> getActivePlayers() {
         return DBHandler.RetrieveAllUsersNames();
     }
 
     @Override
-    public Collection<PlayerInternalData> getActivePlayersStatus() {
+    public ArrayList<PlayerInternalData> getActivePlayersStatus() {
         return DBHandler.RetrieveAllUsersQuick();
     }
 
     @Override
-    public Collection<PlayerInternalData> getActivePlayersPaired() throws SQLException {
+    public ArrayList<PlayerInternalData> getActivePlayersPaired() throws SQLException {
         return DBHandler.getPairedClients();
     }
 
     @Override
-    public Collection<PlayerInternalData> getUnpairedActivePlayers() throws SQLException {
+    public ArrayList<PlayerInternalData> getUnpairedActivePlayers() throws SQLException {
         return DBHandler.getUnpairedClients();
     }
 
@@ -204,5 +204,10 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     @Override
     public PlayerInternalData getPlayerData(String name) {
         return DBHandler.RetrievePlayer(name);
+    }
+
+    @Override
+    public ArrayList<PlayerInternalData> getActivePlayersData() {
+        return DBHandler.RetrieveActiveUsersFull();
     }
 }
