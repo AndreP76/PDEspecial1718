@@ -1,6 +1,7 @@
 package ManagementServer;
 
 import Comunication.ChatUtils.RMIChat.RMIChatRoomModule;
+import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
@@ -20,6 +21,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Scanner;
+import java.util.Set;
 
 public class ManagementServerMain extends UnicastRemoteObject implements RMIManagementServerInterface {
     public static final String MANAGEMENT_SERVER_RMI = "MSRMI";
@@ -43,6 +45,22 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                Set<String> cc = ClientInterfaces.keySet();
+                for (String c : cc) {
+                    try {
+                        logout(c);
+                    } catch (RemoteException e) {
+                        if (!(e instanceof DuplicateLogoutException)) {//kinda to be expected, so don't care
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
+        });
     }
 
     public static void main(String args[]) {

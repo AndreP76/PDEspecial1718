@@ -120,7 +120,6 @@ public class LoginForm extends JFrame implements Serializable {
             }
         });
     }
-
     private void setupUI() {
 
         usernameBox = new javax.swing.JTextField();

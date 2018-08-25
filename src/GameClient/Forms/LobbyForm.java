@@ -7,8 +7,8 @@ import javax.swing.*;
 import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
+import java.awt.event.MouseEvent;
+import java.awt.event.MouseListener;
 import java.rmi.RemoteException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -37,7 +37,7 @@ public class LobbyForm {
     private javax.swing.JButton quitBtn;
     private JFrame jf;
     //
-    private DefaultTableModel playersTableModel;
+    private ReadOnlyTableModel playersTableModel;
     private HashMap<Integer, PlayerInternalData> lineIndexToPlayers;
     private RMIManagementServerInterface managementServer;
     private LobbyHandler lobbyHandler;
@@ -50,19 +50,16 @@ public class LobbyForm {
         jf.setTitle(PID.getName() + " Lobby");
         setupUI(jf);
         jf.setVisible(true);
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                try {
-                    managementServer.logout(PID.getName());
-                } catch (RemoteException e) {
-                    e.printStackTrace();
-                }
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            try {
+                managementServer.logout(PID.getName());
+            } catch (RemoteException e) {
+                e.printStackTrace();
             }
-        });
+        }));
         lobbyHandler = lh;
         try {
-            ArrayList<PlayerInternalData> pls = managementServer.getActivePlayersData();
+            ArrayList<PlayerInternalData> pls = this.managementServer.getActivePlayersData();
             for (PlayerInternalData p : pls) {
                 addPlayerToTable(p);
             }
@@ -72,6 +69,7 @@ public class LobbyForm {
 
         lobbyHandler.setOnAccept((Pair) -> {
             //start a gameform and block this form from interacting
+            JOptionPane.showMessageDialog(null, "Player has accepted!! Yay!!\n Now implement this properly you bastard!\nAnd remove this text box please");
         });
         lobbyHandler.setOnPlayerJoined(this::addPlayerToTable);
         lobbyHandler.setOnPlayerLeft((Player) -> {
@@ -93,13 +91,49 @@ public class LobbyForm {
                 }
             }
         });
+        playersTable.addMouseListener(new MouseListener() {
+            @Override
+            public void mouseClicked(MouseEvent mouseEvent) {
+                if (mouseEvent.getClickCount() >= 2) {
+                    int row = playersTable.rowAtPoint(mouseEvent.getPoint());
+                    //int column = playersTable.rowAtPoint(mouseEvent.getPoint());
+                    String playername = (String) playersTable.getValueAt(row, 0);
+                    try {
+                        managementServer.requestPair(new PlayerInternalData(playername), lobbyHandler);
+                    } catch (RemoteException e) {
+                        //TODO : HANDLE THIS THING
+                        e.printStackTrace();
+                    }
+                }
+            }
+
+            @Override
+            public void mousePressed(MouseEvent mouseEvent) {
+
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent mouseEvent) {
+
+            }
+
+            @Override
+            public void mouseEntered(MouseEvent mouseEvent) {
+
+            }
+
+            @Override
+            public void mouseExited(MouseEvent mouseEvent) {
+
+            }
+        });
     }
 
     private void addPlayerToTable(PlayerInternalData p) {
         if (!p.getName().equals(PID.getName())) {
             JButton requestButton = new JButton();
             requestButton.setText("Request pair");
-            requestButton.addActionListener(new ActionListener() {
+            /*requestButton.addActionListener(new ActionListener() {
                 @Override
                 public void actionPerformed(ActionEvent actionEvent) {
                     try {
@@ -108,7 +142,7 @@ public class LobbyForm {
                         e.printStackTrace();
                     }
                 }
-            });
+            });*/
             playersTableModel.addRow(new Object[]{p.getName(), p.getWonRounds() + "\\" + p.getLostRounds(), p.getPairedPlayer() != null ? "Yes" : "No", "TODO", requestButton});
         }
     }
@@ -122,7 +156,8 @@ public class LobbyForm {
         jButton2 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
         quitBtn = new javax.swing.JButton();
-        playersTableModel = new javax.swing.table.DefaultTableModel(null,
+
+        playersTableModel = new ReadOnlyTableModel(null,
                 new String[]{
                         NAME_COLUMN_TITLE, WINS_COLUMN_TITLE, PAIR_COLUMN_TITLE, PLAY_COLUMN_TITLE, JOIN_COLUMN_TITLE
                 }
@@ -190,6 +225,17 @@ public class LobbyForm {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JButton button = (JButton) value;
             return button;
+        }
+    }
+
+    private class ReadOnlyTableModel extends DefaultTableModel {
+        ReadOnlyTableModel(Object[][] values, String[] titles) {
+            super(values, titles);
+        }
+
+        @Override
+        public boolean isCellEditable(int i, int i1) {
+            return false;
         }
     }
 }

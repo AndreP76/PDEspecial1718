@@ -160,7 +160,7 @@ public class JDBCHandlerTestModule {
 
         if (TestConnection()) {
             TestRetrieval();
-            TestQuickRetrieval();
+            /*TestQuickRetrieval();
             TestAllUsersQuick();
             TestAllUsersFull();
             TestUserCreation();
@@ -170,7 +170,7 @@ public class JDBCHandlerTestModule {
             TestLogout();
             TestAllUsersQuick();
             TestUserDeletion();
-            TestAllUsersFull();
+            TestAllUsersFull();*/
         }
     }
 }

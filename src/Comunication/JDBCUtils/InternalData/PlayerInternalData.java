@@ -38,6 +38,7 @@ public class PlayerInternalData implements Serializable {
         this.realName = realName;
         this.loggedIn = (loggedIn == 1);
         this.pairedPlayer = pairedPlayer;
+        this.ID = ID;
     }
 
     public String getName() {
