@@ -10,10 +10,11 @@ import java.awt.*;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseListener;
 import java.rmi.RemoteException;
+import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class LobbyForm {
+public class LobbyForm extends UnicastRemoteObject {
     //</editor-fold>
     //<editor-fold desc="Graphical Constants">
     private static final String NAME_COLUMN_TITLE = "Name";
@@ -43,7 +44,8 @@ public class LobbyForm {
     private LobbyHandler lobbyHandler;
     private PlayerInternalData PID;
 
-    LobbyForm(RMIManagementServerInterface managementServer, PlayerInternalData PID, LobbyHandler lh) {
+    LobbyForm(RMIManagementServerInterface managementServer, PlayerInternalData PID, LobbyHandler lh) throws RemoteException {
+        super();
         this.managementServer = managementServer;
         this.PID = PID;
         jf = new JFrame();
@@ -68,8 +70,17 @@ public class LobbyForm {
         }
 
         lobbyHandler.setOnAccept((Pair) -> {
+            String gameServerIP = null;
+            try {
+                gameServerIP = managementServer.getGameServerIP();
+                GameForm gf = new GameForm(gameServerIP);
+                jf.setVisible(false);
+                return;
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
             //start a gameform and block this form from interacting
-            JOptionPane.showMessageDialog(null, "Player has accepted!! Yay!!\n Now implement this properly you bastard!\nAnd remove this text box please");
+            //JOptionPane.showMessageDialog(null, "Player has accepted!! Yay!!\n Now implement this properly you bastard!\nAnd remove this text box please");
         });
         lobbyHandler.setOnPlayerJoined(this::addPlayerToTable);
         lobbyHandler.setOnPlayerLeft((Player) -> {
@@ -133,16 +144,6 @@ public class LobbyForm {
         if (!p.getName().equals(PID.getName())) {
             JButton requestButton = new JButton();
             requestButton.setText("Request pair");
-            /*requestButton.addActionListener(new ActionListener() {
-                @Override
-                public void actionPerformed(ActionEvent actionEvent) {
-                    try {
-                        managementServer.requestPair(p, lobbyHandler);
-                    } catch (RemoteException e) {
-                        e.printStackTrace();
-                    }
-                }
-            });*/
             playersTableModel.addRow(new Object[]{p.getName(), p.getWonRounds() + "\\" + p.getLostRounds(), p.getPairedPlayer() != null ? "Yes" : "No", "TODO", requestButton});
         }
     }

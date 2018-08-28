@@ -19,7 +19,7 @@ public class ClientMain implements Serializable {
         //DEBUG ONLY
         //ChatForm ct = new ChatForm(new PlayerInternalData(StringUtils.RandomAlfa(6)));
         try {
-            LoginForm lf = new LoginForm((RMIManagementServerInterface) Naming.lookup("//" + ManagementServerIP + "/" + ManagementServerServiceName),(RMIChatRoomInterface) Naming.lookup("//"+ManagementServerIP + "/" + ChatServerServiceName));
+            LoginForm lf = new LoginForm((RMIManagementServerInterface) Naming.lookup("rmi://" + ManagementServerIP + "/" + ManagementServerServiceName), (RMIChatRoomInterface) Naming.lookup("//" + ManagementServerIP + "/" + ChatServerServiceName));
         } catch (NotBoundException e) {
             e.printStackTrace();
         } catch (MalformedURLException e) {

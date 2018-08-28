@@ -27,7 +27,7 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     }
 
     public RMIChatClientModule(PlayerInternalData pid, String serverIP, String serviceName, Consumer<ChatPacket> onNewMessageListener, Consumer<String> onNewClientListener) throws RemoteException, MalformedURLException, NotBoundException {
-        chatServer = (RMIChatRoomInterface) Naming.lookup("//" + serverIP + "/" + serviceName);
+        chatServer = (RMIChatRoomInterface) Naming.lookup("rmi://" + serverIP + "/" + serviceName);
         PID = pid;
         chatServer.newClient(PID.getName(), this);
         this.onNewClientListener = onNewClientListener;

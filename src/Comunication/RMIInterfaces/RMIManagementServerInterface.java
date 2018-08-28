@@ -29,4 +29,6 @@ public interface RMIManagementServerInterface extends Remote {
     PlayerInternalData getPlayerData(String name) throws RemoteException;
 
     ArrayList<PlayerInternalData> getActivePlayersData() throws RemoteException;
+
+    String getGameServerIP() throws RemoteException;
 }

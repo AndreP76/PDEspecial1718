@@ -4,5 +4,5 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 
 public interface RMIHeartbeatInterface extends Remote {
-    String hearbeatMethod(String ID) throws RemoteException;
+    String hearbeatMethod(String ID, String IP) throws RemoteException;
 }

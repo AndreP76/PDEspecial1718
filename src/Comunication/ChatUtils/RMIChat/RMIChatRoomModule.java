@@ -19,9 +19,14 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
     private static final long serialVersionUID = 5464874L;
     private HashMap<String, RMIChatClientInterface> clientsToInterface;
 
-    public RMIChatRoomModule(String serviceName, String serviceIP) throws RemoteException, MalformedURLException {
-        LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
-        Naming.rebind("//" + serviceIP + "/" + serviceName, this);
+    public RMIChatRoomModule(String serviceName, String serviceIP) throws MalformedURLException, RemoteException {
+        try {
+            LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+        } catch (RemoteException e) {
+            System.out.println("[CHAT SERVER DEBUG] :: RMI Registry already found");
+        }
+
+        Naming.rebind("rmi://" + serviceIP + "/" + serviceName, this);
         clientsToInterface = new HashMap<>();
     }
 

@@ -3,6 +3,7 @@ package RockPaperScissors;
 import RockPaperScissors.Exceptions.InvalidCallException;
 import RockPaperScissors.Exceptions.InvalidDecisionException;
 
+import java.io.InvalidObjectException;
 import java.io.Serializable;
 import java.util.Observable;
 
@@ -11,18 +12,27 @@ public class Game extends Observable implements Serializable {
     public static final int NOT_DECIDED_INDEX = -2;
 
     int Player0Wins, Player1Wins, Draws;
-    Player[] Players;
+    String[] Players;
     int winnerIndex = NOT_DECIDED_INDEX;
+    int currentRound = 0;
+    int maxRounds = 0;
     private GameChoice[] PlayerChoices;
 
-    Game(Player Player1, Player Player2) {
+    public Game(String Player1, String Player2) {
         Player0Wins = Player1Wins = Draws = 0;
         PlayerChoices = new GameChoice[2];
         PlayerChoices[0] = GameChoice.None;
         PlayerChoices[1] = GameChoice.None;
-        Players = new Player[2];
+        Players = new String[2];
         Players[0] = Player1;
         Players[1] = Player2;
+    }
+
+    public void Play(String s, GameChoice gc) {
+        if (Players[0].equals(s))
+            Play(gc, 0);
+        if (Players[1].equals(s))
+            Play(gc, 1);
     }
 
     void Play(GameChoice C, int PI) {
@@ -39,10 +49,19 @@ public class Game extends Observable implements Serializable {
                     Player1Wins++;
                 }
                 notifyObservers();
+                resetGameAndIncreaseRounds();
             } else {//Don't wait.
                 notifyObservers();
             }
         }
+    }
+
+    private void resetGameAndIncreaseRounds() {
+        PlayerChoices[0] = GameChoice.None;
+        PlayerChoices[1] = GameChoice.None;
+        winnerIndex = NOT_DECIDED_INDEX;
+        setChanged();
+        notifyObservers();
     }
 
     int CalculateGameResult(GameChoice[] PC) {
@@ -148,5 +167,17 @@ public class Game extends Observable implements Serializable {
     GameChoice getPlayerChoice(int PlayerIndex) {
         if (PlayerIndex >= 0 && PlayerIndex <= 1) return PlayerChoices[PlayerIndex];
         else return null;
+    }
+
+    public GameView generateGameView() {
+        return new GameView(Players[0], PlayerChoices[0] != GameChoice.None, Player0Wins, PlayerChoices[0], Players[1], PlayerChoices[1] != GameChoice.None, Player1Wins, PlayerChoices[1], Draws);
+    }
+
+    public boolean hasPlayerChoosen(String sender) throws InvalidObjectException {
+        if (Players[0].equals(sender))
+            return hasPlayerChoosen(0);
+        if (Players[1].equals(sender))
+            return hasPlayerChoosen(sender);
+        throw new InvalidObjectException("Player does not exist");
     }
 }

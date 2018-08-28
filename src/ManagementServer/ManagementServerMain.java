@@ -41,7 +41,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
             LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
         }
         try {
-            Naming.rebind("//localhost/" + MANAGEMENT_SERVER_RMI, this);
+            Naming.rebind("rmi://localhost/" + MANAGEMENT_SERVER_RMI, this);
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
@@ -80,6 +80,9 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
             if (DBHandler.ConnectToDB()) {
                 try {
+                    if (LocateRegistry.getRegistry() == null) {
+                        LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+                    }
                     RMIHeartbeatService RMIHS = new RMIHeartbeatService(DBHandler.getConnectionString());
                     System.out.println("Heartbeat service ready!");
                     try {
@@ -110,7 +113,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                         throwable.printStackTrace();
                     }
                 } catch (RemoteException e) {
-                    System.out.println("Error on heartbeat service! Shutting down...");
+                    System.out.println("Error on heartbeat service! Shutting down...\nError : " + e.getMessage());
                 }
             } else {
                 System.out.println("Error connecting to DB server, shutting down...");
@@ -217,5 +220,10 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     @Override
     public ArrayList<PlayerInternalData> getActivePlayersData() {
         return DBHandler.RetrieveActiveUsersFull();
+    }
+
+    @Override
+    public String getGameServerIP() {
+        return RMIHS.getGameServerIP();
     }
 }

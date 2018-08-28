@@ -2,6 +2,7 @@ package Comunication.RMIHandlers;
 
 import Comunication.JDBCUtils.JDBCHandler;
 import Comunication.RMIInterfaces.RMIHeartbeatInterface;
+import Utils.StringUtils;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -18,31 +19,28 @@ public class RMIHeartbeatHandler extends Thread {
     private RMIHeartbeatInterface managementServer;
     private String ManagementServerIPAddressString;
     private String RMIConnectionString;
-    private String ServiceName = "ManagementServerRMI";
+    private String ServiceName = RMIHeartbeatService.RMI_HEARTBEAT_SERVICE_NAME;
     private String ID;
 
-    public RMIHeartbeatHandler(String IP) {
+    private String socketAddress;
+
+    public RMIHeartbeatHandler(String IP, String gameSocketAddress) {
         this.ManagementServerIPAddressString = IP;
-        RMIConnectionString = "//" + ManagementServerIPAddressString + "/" + ServiceName;
+        RMIConnectionString = "rmi://" + ManagementServerIPAddressString + "/" + ServiceName;
         ID = this.generateID();
+        socketAddress = gameSocketAddress;
     }
 
     private String generateID() {//an MD5 hash or something, so that the management server can keep tabs
-        //TODO : Generate unique ID
-        return "TESTING_ID_CODE_31235258598978456486";
-    }
-
-    @Override
-    public synchronized void start() {
-        super.start();
-        this.run();
+        return StringUtils.RandomAlfa(32);
     }
 
     @Override
     public void run() {
         try {
             managementServer = (RMIHeartbeatInterface) Naming.lookup(RMIConnectionString);
-            String IPString = managementServer.hearbeatMethod(this.ID);//The initial update
+            String IPString = managementServer.hearbeatMethod(this.ID, this.socketAddress);//The initial update
+            DBHandler = new JDBCHandler();
             DBHandler.setDatabaseServerAddressString(IPString);
         } catch (NotBoundException e) {
             e.printStackTrace();
@@ -54,7 +52,7 @@ public class RMIHeartbeatHandler extends Thread {
         while (!isInterrupted()) {
             try {
                 Thread.sleep(HearbeatMiliseconds);
-                String IPString = managementServer.hearbeatMethod(this.ID);
+                String IPString = managementServer.hearbeatMethod(this.ID, this.socketAddress);
                 DBHandler.setDatabaseServerAddressString(IPString);
             } catch (InterruptedException e) {
                 e.printStackTrace();

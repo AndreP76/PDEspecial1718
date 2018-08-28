@@ -317,7 +317,7 @@ public class JDBCHandler {
             ResultSet rs = S.executeQuery(query);
             if (rs != null) {
                 if (rs.next()) {
-                    PairInternalData PID = new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), token, rs.getInt("ID"));
+                    PairInternalData PID = new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), token, rs.getInt("ID"), rs.getInt("Active") == 1);
                     return PID;
                 } else return null;
             } else return null;
@@ -331,7 +331,7 @@ public class JDBCHandler {
             ResultSet rs = S.executeQuery(query);
             if (rs != null) {
                 if (rs.next()) {
-                    PairInternalData PID = new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), rs.getString("Token"), rs.getInt("ID"));
+                    PairInternalData PID = new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), rs.getString("Token"), rs.getInt("ID"), rs.getInt("Active") == 1);
                     return PID;
                 } else return null;
             } else return null;
@@ -365,9 +365,21 @@ public class JDBCHandler {
             ResultSet rs = s.executeQuery(getQuery);
             if (rs != null) {
                 while (rs.next()) {
-                    PIDS.add(new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer("PlayerTwo"), rs.getString("Token"), rs.getInt("ID")));
+                    PIDS.add(new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer("PlayerTwo"), rs.getString("Token"), rs.getInt("ID"), rs.getInt("Active") == 1));
                 }
                 return PIDS;
+            } else return null;
+        }
+    }
+
+    public PairInternalData getPlayerActivePair(String name) throws SQLException {
+        try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
+            String query = "SELECT * FROM Pairs WHERE PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "') OR PlayerTwo IN (SELECT ID FROM Users WHERE Name = '" + name + "');";
+            ResultSet rs = c.createStatement().executeQuery(query);
+            if (rs != null) {
+                if (rs.next()) {
+                    return new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), rs.getString("Token"), rs.getInt("ID"), rs.getInt("Active") == 1);
+                } else return null;
             } else return null;
         }
     }

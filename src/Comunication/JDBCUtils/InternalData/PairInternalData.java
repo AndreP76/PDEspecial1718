@@ -6,17 +6,19 @@ public class PairInternalData implements Serializable {
     PlayerInternalData PlayerOne;
     PlayerInternalData PlayerTwo;
     String token;
-    int ID;
+    Boolean active;
+    Integer ID;
 
     PairInternalData() {
-        this(null, null, null, -1);
+        this(null, null, null, -1, null);
     }
 
-    public PairInternalData(PlayerInternalData PID1, PlayerInternalData PID2, String token, int ID) {
+    public PairInternalData(PlayerInternalData PID1, PlayerInternalData PID2, String token, int ID, Boolean active) {
         this.ID = ID;
         this.token = token;
         PlayerOne = PID1;
         PlayerTwo = PID2;
+        this.active = active;
     }
 
     public PlayerInternalData getPlayerOne() {
@@ -49,5 +51,9 @@ public class PairInternalData implements Serializable {
 
     public void setID(int ID) {
         this.ID = ID;
+    }
+
+    public Boolean getActive() {
+        return active;
     }
 }

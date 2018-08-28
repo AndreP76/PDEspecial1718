@@ -2,27 +2,42 @@ package Comunication.RMIHandlers;
 
 import Comunication.RMIInterfaces.RMIHeartbeatInterface;
 
+import java.io.Serializable;
+import java.net.MalformedURLException;
+import java.rmi.Naming;
 import java.rmi.RemoteException;
+import java.rmi.registry.LocateRegistry;
+import java.rmi.registry.Registry;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.LinkedList;
 
-public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeartbeatInterface {
+public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeartbeatInterface, Serializable {
+    public static final String RMI_HEARTBEAT_SERVICE_NAME = "RMIHBS";
     private LinkedList<IDPair> IDtoHeartbeatCount = null;
     private IDPair oldestPair = null;
     private String DBServerIP;
 
     public RMIHeartbeatService(String DBServerIP) throws RemoteException {
         IDtoHeartbeatCount = new LinkedList<>();//Maybe quicker, maybe not
-        this.DBServerIP = DBServerIP;
+        try {
+            //if (LocateRegistry.getRegistry() == null) {
+            LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+            //}
+            Naming.rebind("rmi://localhost/" + RMI_HEARTBEAT_SERVICE_NAME, this);
+            this.DBServerIP = DBServerIP;
+        } catch (MalformedURLException e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
-    public String hearbeatMethod(String ID) {
+    public String hearbeatMethod(String ID, String IPAddress) {
+        System.out.println("Heartbeat called!");
         IDPair ipd = findID(ID);
         if (ipd != null) {//ID exists
             increaseHeartbeats(ID);
         } else {
-            IDtoHeartbeatCount.add(new IDPair(ID, 0));
+            IDtoHeartbeatCount.add(new IDPair(ID, 0, IPAddress));
         }
         increaseHeartbeats(ID);//SIDE EFFECT : Changes oldestPair
         if (oldestPair.getID().equals(ID)) {
@@ -36,7 +51,7 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
         IDPair idp = findID(id);
         if (idp != null) {
             idp.incHeartbeats();
-            if (idp.getHeartbeatCount() > oldestPair.getHeartbeatCount()) {
+            if (oldestPair == null || idp.getHeartbeatCount() > oldestPair.getHeartbeatCount()) {
                 oldestPair = idp;
             }
         }
@@ -56,17 +71,23 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
         return findID(id) != null;
     }
 
-    private class IDPair {
+    public String getGameServerIP() {
+        return oldestPair.getIPAddress();
+    }
+
+    private class IDPair implements Serializable {
         private String ID;
         private int HeartbeatsCount = 0;
+        private String IPAddress;
 
-        IDPair(String ID, int initialCount) {
+        IDPair(String ID, int initialCount, String IPAddress) {
             this.ID = ID;
             this.HeartbeatsCount = initialCount;
+            this.IPAddress = IPAddress;
         }
 
-        IDPair(String ID) {
-            this(ID, 0);
+        IDPair(String ID, String IPAddress) {
+            this(ID, 0, IPAddress);
         }
 
         public String getID() {
@@ -83,6 +104,10 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
 
         public int getHeartbeatCount() {
             return HeartbeatsCount;
+        }
+
+        public String getIPAddress() {
+            return IPAddress;
         }
     }
 }
