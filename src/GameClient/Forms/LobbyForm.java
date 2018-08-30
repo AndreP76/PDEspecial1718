@@ -15,6 +15,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class LobbyForm extends UnicastRemoteObject {
+    //TODO : Add an see history button here
     //</editor-fold>
     //<editor-fold desc="Graphical Constants">
     private static final String NAME_COLUMN_TITLE = "Name";
@@ -73,7 +74,7 @@ public class LobbyForm extends UnicastRemoteObject {
             String gameServerIP = null;
             try {
                 gameServerIP = managementServer.getGameServerIP();
-                GameForm gf = new GameForm(gameServerIP);
+                GameForm gf = new GameForm(gameServerIP, PID, this);
                 jf.setVisible(false);
                 return;
             } catch (RemoteException e) {
@@ -219,6 +220,12 @@ public class LobbyForm extends UnicastRemoteObject {
         );
 
         j.pack();
+    }
+
+    public int showGUI(GameForm gameForm) {//so only the gameForm can render this again
+        int x = gameForm.hashCode();
+        jf.setVisible(true);
+        return x;
     }
 
     private static class JTableButtonRenderer implements TableCellRenderer {

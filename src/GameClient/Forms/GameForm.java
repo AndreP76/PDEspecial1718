@@ -1,11 +1,16 @@
 package GameClient.Forms;
 
+import Comunication.JDBCUtils.InternalData.PlayerInternalData;
+import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
 
 import javax.swing.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
 import java.util.function.Consumer;
 
 public class GameForm {
+    public static final String DRAW_NAME = "5551651534531354354355135242466756+8756827+6857+685+6758+7586+756+8756+8567+586";//lulz
     GameHandler gh;
     // <editor-fold defaultstate="collapsed" desc="UI Setup methods">
     private JButton btnLizard;
@@ -27,32 +32,119 @@ public class GameForm {
     private JTextArea textAreaRules;
     private JFrame frame;
 
-    GameForm(String gameServerIP) {
+    private PlayerInternalData thisPlayerID;
+    private LobbyForm lf;
+
+    GameForm(String gameServerIP, PlayerInternalData thisPlayerID, LobbyForm lf) {
+        this.lf = lf;
         setupUI();
-        gh = new GameHandler(gameServerIP);
+        this.thisPlayerID = thisPlayerID;
+        gh = new GameHandler(gameServerIP, this.thisPlayerID);
         frame.setVisible(true);
+        blockForm();
 
         gh.setOnGameStarted(new Consumer<GameView>() {
             @Override
             public void accept(GameView gameView) {
-                lblDraws.setText("Draws : " + gameView.getDraws());
-                lblPlayerOneScore.setText(gameView.getPlayerOne() + "'s score : " + gameView.getPlayerOneScore());
-                lblPlayerTwoScore.setText(gameView.getPlayerTwo() + "'s score : " + gameView.getPlayerTwoScore());
-
-                lblPlayerOneChoice.setText(gameView.getPlayerOneChoice().toString());
-                lblPlayerTwoChoice.setText(gameView.getPlayerTwoChoice().toString());
+                unblockForm();
+                renderGameView(gameView);
             }
         });
-
         gh.setOnWinnerDecided(new Consumer<String>() {
             @Override
             public void accept(String playerName) {
+                if (playerName.equals(DRAW_NAME)) {
+                    JOptionPane.showMessageDialog(null, "This round was a draw...");
+                }
                 JOptionPane.showMessageDialog(null, playerName + " has won this round!");
+                unblockForm();
+            }
+        });
+        gh.setOnGameStopped(new Consumer<Void>() {
+            @Override
+            public void accept(Void aVoid) {
+                //TODO
+            }
+        });
+        gh.setOnGameUpdated(new Consumer<GameView>() {
+            @Override
+            public void accept(GameView gameView) {
+                renderGameView(gameView);
+            }
+        });
+        gh.setOnPlayerQuit(new Consumer<PlayerInternalData>() {//winner by default
+            @Override
+            public void accept(PlayerInternalData playerInternalData) {
+
+            }
+        });
+
+        //Setup the buttons
+        btnLizard.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                gh.sendGameMove(GameChoice.Lizard);
+                blockForm();
+            }
+        });
+        btnScissors.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                gh.sendGameMove(GameChoice.Scissors);
+                blockForm();
+            }
+        });
+        btnSpock.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                gh.sendGameMove(GameChoice.Spock);
+                blockForm();
+            }
+        });
+        btnPaper.addActionListener(new ActionListener() {
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                gh.sendGameMove(GameChoice.Paper);
+                blockForm();
+            }
+        });
+        btnRocket.addActionListener(new ActionListener() {//why did I name this button Rocket ?
+            @Override
+            public void actionPerformed(ActionEvent actionEvent) {
+                gh.sendGameMove(GameChoice.Rock);
+                blockForm();
             }
         });
 
         gh.start();
         gh.sendGameStart();
+    }
+
+    private void renderGameView(GameView gameView) {
+        lblDraws.setText("Draws : " + gameView.getDraws());
+        lblPlayerOneScore.setText(gameView.getPlayerOne() + "'s score : " + gameView.getPlayerOneScore());
+        lblPlayerTwoScore.setText(gameView.getPlayerTwo() + "'s score : " + gameView.getPlayerTwoScore());
+
+        lblPlayerOneChoice.setText(gameView.getPlayerOneChoice().toString());
+        lblPlayerTwoChoice.setText(gameView.getPlayerTwoChoice().toString());
+    }
+
+    private void unblockForm() {
+        btnLizard.setEnabled(true);
+        btnPaper.setEnabled(true);
+        btnSpock.setEnabled(true);
+        btnScissors.setEnabled(true);
+        btnRocket.setEnabled(true);
+        btnQuit.setEnabled(true);
+    }
+
+    private void blockForm() {
+        btnLizard.setEnabled(false);
+        btnPaper.setEnabled(false);
+        btnSpock.setEnabled(false);
+        btnScissors.setEnabled(false);
+        btnRocket.setEnabled(false);
+        btnQuit.setEnabled(false);
     }
 
     private void setupUI() {
@@ -61,21 +153,32 @@ public class GameForm {
         btnScissors = new javax.swing.JButton();
         btnRocket = new javax.swing.JButton();
         btnLizard = new javax.swing.JButton();
+
         jPanel1 = new javax.swing.JPanel();
         lblPlayerOneScore = new javax.swing.JLabel();
         lblDraws = new javax.swing.JLabel();
         lblPlayerTwoScore = new javax.swing.JLabel();
+
         btnQuit = new javax.swing.JButton();
+
         jPanel2 = new javax.swing.JPanel();
         jScrollPane1 = new javax.swing.JScrollPane();
         textAreaRules = new javax.swing.JTextArea();
+        textAreaRules.setEditable(false);
         jPanel3 = new javax.swing.JPanel();
         lblPlayerOneChoice = new javax.swing.JLabel();
         jLabel2 = new javax.swing.JLabel();
         lblPlayerTwoChoice = new javax.swing.JLabel();
-        frame = new JFrame();
+        frame = new JFrame() {
+            @Override
+            public void dispose() {
+                super.dispose();
+                gh.sendPlayerLeaving();
+                lf.showGUI(GameForm.this);
+            }
+        };
 
-        frame.setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
+        frame.setDefaultCloseOperation(WindowConstants.DISPOSE_ON_CLOSE);
 
         btnSpock.setText("Spock");
         btnPaper.setText("Paper");

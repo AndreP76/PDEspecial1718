@@ -12,7 +12,7 @@ public class Game extends Observable implements Serializable {
     public static final int NOT_DECIDED_INDEX = -2;
 
     int Player0Wins, Player1Wins, Draws;
-    String[] Players;
+    private String[] Players;
     int winnerIndex = NOT_DECIDED_INDEX;
     int currentRound = 0;
     int maxRounds = 0;
@@ -64,7 +64,7 @@ public class Game extends Observable implements Serializable {
         notifyObservers();
     }
 
-    int CalculateGameResult(GameChoice[] PC) {
+    private int CalculateGameResult(GameChoice[] PC) {
         switch (PC[0]) {//Player 0 choice
             case Rock: {
                 switch (PC[1]) {
@@ -170,14 +170,24 @@ public class Game extends Observable implements Serializable {
     }
 
     public GameView generateGameView() {
-        return new GameView(Players[0], PlayerChoices[0] != GameChoice.None, Player0Wins, PlayerChoices[0], Players[1], PlayerChoices[1] != GameChoice.None, Player1Wins, PlayerChoices[1], Draws);
+        return new GameView(Players[0], PlayerChoices[0] != GameChoice.None, Player0Wins, PlayerChoices[0] != GameChoice.None && PlayerChoices[1] != GameChoice.None ? PlayerChoices[0] : GameChoice.None, Players[1], PlayerChoices[1] != GameChoice.None, Player1Wins, PlayerChoices[0] != GameChoice.None && PlayerChoices[1] != GameChoice.None ? PlayerChoices[1] : GameChoice.None, Draws);
     }
 
     public boolean hasPlayerChoosen(String sender) throws InvalidObjectException {
         if (Players[0].equals(sender))
             return hasPlayerChoosen(0);
         if (Players[1].equals(sender))
-            return hasPlayerChoosen(sender);
+            return hasPlayerChoosen(1);
         throw new InvalidObjectException("Player does not exist");
+    }
+
+    public int getWinnerIndex() {
+        return winnerIndex;
+    }
+
+    public String getPlayerNameByIndex(int winnerIndex) {
+        if (winnerIndex >= 0 && winnerIndex <= 1)
+            return Players[winnerIndex];
+        return null;
     }
 }

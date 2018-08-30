@@ -15,33 +15,40 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
     public static final String RMI_HEARTBEAT_SERVICE_NAME = "RMIHBS";
     private LinkedList<IDPair> IDtoHeartbeatCount = null;
     private IDPair oldestPair = null;
-    private String DBServerIP;
 
-    public RMIHeartbeatService(String DBServerIP) throws RemoteException {
+    private String DBServerIP;
+    private String DBServerPort;
+    private String DBServerUser;
+    private String DBServerPassword;
+
+    public RMIHeartbeatService(String DBServerIP, String DBServerPort, String DBServerUser, String DBServerPassword) throws RemoteException {
         IDtoHeartbeatCount = new LinkedList<>();//Maybe quicker, maybe not
         try {
             //if (LocateRegistry.getRegistry() == null) {
             LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
             //}
             Naming.rebind("rmi://localhost/" + RMI_HEARTBEAT_SERVICE_NAME, this);
+
             this.DBServerIP = DBServerIP;
+            this.DBServerPort = DBServerPort;
+            this.DBServerUser = DBServerUser;
+            this.DBServerPassword = DBServerPassword;
         } catch (MalformedURLException e) {
             e.printStackTrace();
         }
     }
 
     @Override
-    public String hearbeatMethod(String ID, String IPAddress) {
-        System.out.println("Heartbeat called!");
+    public String[] hearbeatMethod(String ID, String IPAddress) {
+        System.out.println("[Heartbeat service][VERBOSE] :: Heartbeat called!");
         IDPair ipd = findID(ID);
-        if (ipd != null) {//ID exists
-            increaseHeartbeats(ID);
-        } else {
+        if (ipd == null) {//ID exists
             IDtoHeartbeatCount.add(new IDPair(ID, 0, IPAddress));
         }
         increaseHeartbeats(ID);//SIDE EFFECT : Changes oldestPair
+        System.out.println("[Heartbeat service][VERBOSE] :: Oldest game server is " + oldestPair.getID() + "@" + oldestPair.getIPAddress());
         if (oldestPair.getID().equals(ID)) {
-            return DBServerIP;
+            return new String[]{DBServerIP, DBServerPort, DBServerUser, DBServerPassword};
         } else {
             return null;
         }

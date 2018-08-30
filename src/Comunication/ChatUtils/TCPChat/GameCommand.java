@@ -8,5 +8,5 @@ public enum GameCommand {
     ENDED,   //TODO
     WINNER_DECIDED, //I think this will be removed
     START_GAME, //Client to server
-    MAKE_PLAY, //Client to server, send a move
+    MAKE_PLAY, PLAYER_LEAVING, //Client to server, send a move
 }

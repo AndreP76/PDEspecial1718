@@ -4,6 +4,7 @@ import Comunication.ChatUtils.TCPChat.GameCommand;
 import Comunication.ChatUtils.TCPChat.GamePacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import GameServer.GameServerMain;
+import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
 
 import java.io.IOException;
@@ -24,8 +25,9 @@ public class GameHandler extends Thread {
     private ObjectOutputStream toServerData;
     private PlayerInternalData thisPlayerID;
 
-    GameHandler(String gameServerSocketAddress) {
+    GameHandler(String gameServerSocketAddress, PlayerInternalData thisPlayerID) {
         try {
+            this.thisPlayerID = thisPlayerID;
             String IPAddress = gameServerSocketAddress.substring(0, gameServerSocketAddress.indexOf(":"));
             toServerSocket = new Socket(IPAddress, Integer.parseInt(gameServerSocketAddress.substring(gameServerSocketAddress.indexOf(":") + 1)));
             toServerData = new ObjectOutputStream(toServerSocket.getOutputStream());//OUTPUT FIRST
@@ -39,18 +41,20 @@ public class GameHandler extends Thread {
     public void run() {
         while (!isInterrupted()) {
             try {
-                GameCommand GP = (GameCommand) fromServerData.readObject();
-                if (GP == GameCommand.UPDATED) {
-                    GameView gv = (GameView) fromServerData.readObject();
-                    onGameUpdated.accept(gv);
-                } else if (GP == GameCommand.STARTED) {
-                    GameView gid = (GameView) fromServerData.readObject();
-                    onGameStarted.accept(gid);
-                } else if (GP == GameCommand.STOPPED) {//stopped as in paused, maybe ?
-                    onGameStopped.accept(null);
-                } else if (GP == GameCommand.WINNER_DECIDED) {
-                    String winnerID = (String) fromServerData.readObject();
-                    onWinnerDecided.accept(winnerID);
+                GamePacket GP = (GamePacket) fromServerData.readObject();
+                if (GP.getSender().equals(GameServerMain.GAMESERVER_NAME)) {
+                    if (GP.getCommand() == GameCommand.UPDATED) {
+                        GameView gv = (GameView) fromServerData.readObject();
+                        onGameUpdated.accept(gv);
+                    } else if (GP.getCommand() == GameCommand.STARTED) {
+                        GameView gid = (GameView) fromServerData.readObject();
+                        onGameStarted.accept(gid);
+                    } else if (GP.getCommand() == GameCommand.STOPPED) {//stopped as in paused, maybe ?
+                        onGameStopped.accept(null);
+                    } else if (GP.getCommand() == GameCommand.WINNER_DECIDED) {
+                        String winnerID = (String) fromServerData.readObject();
+                        onWinnerDecided.accept(winnerID);
+                    }
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -85,6 +89,23 @@ public class GameHandler extends Thread {
         GamePacket gp = new GamePacket(thisPlayerID.getName(), GameServerMain.GAMESERVER_NAME, GameCommand.START_GAME);
         try {
             toServerData.writeObject(gp);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendPlayerLeaving() {
+        try {
+            toServerData.writeObject(new GamePacket(thisPlayerID.getName(), GameServerMain.GAMESERVER_NAME, GameCommand.PLAYER_LEAVING));
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void sendGameMove(GameChoice choice) {
+        try {
+            toServerData.writeObject(new GamePacket(thisPlayerID.getName(), GameServerMain.GAMESERVER_NAME, GameCommand.MAKE_PLAY));
+            toServerData.writeObject(choice);
         } catch (IOException e) {
             e.printStackTrace();
         }

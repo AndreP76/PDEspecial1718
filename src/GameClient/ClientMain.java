@@ -13,11 +13,10 @@ import java.rmi.RemoteException;
 
 public class ClientMain implements Serializable {
     public static void main(String[] args) {
+        System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         String ManagementServerIP = args.length >= 1 ? args[0] : "localhost";
         String ManagementServerServiceName = args.length >= 2 ? args[1] : ManagementServerMain.MANAGEMENT_SERVER_RMI;
         String ChatServerServiceName = "RMIC";
-        //DEBUG ONLY
-        //ChatForm ct = new ChatForm(new PlayerInternalData(StringUtils.RandomAlfa(6)));
         try {
             LoginForm lf = new LoginForm((RMIManagementServerInterface) Naming.lookup("rmi://" + ManagementServerIP + "/" + ManagementServerServiceName), (RMIChatRoomInterface) Naming.lookup("//" + ManagementServerIP + "/" + ChatServerServiceName));
         } catch (NotBoundException e) {

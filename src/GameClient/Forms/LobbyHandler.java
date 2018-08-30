@@ -42,7 +42,6 @@ public class LobbyHandler extends UnicastRemoteObject implements ClientsCallback
     @Override
     public void onPairRequestAccepted(PairInternalData PID) {
         onAccept.accept(PID);
-        return;
     }
 
     @Override

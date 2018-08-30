@@ -1,6 +1,9 @@
 package Comunication.ChatUtils.TCPChat;
 
-public class GamePacket {
+import java.io.Serializable;
+
+public class GamePacket implements Serializable {
+    private static final long serialVersionUID = 576834683L;
     String sender;
     String target;
     GameCommand command;

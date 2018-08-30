@@ -38,26 +38,59 @@ public class RMIHeartbeatHandler extends Thread {
     @Override
     public void run() {
         try {
+            System.out.println("[Heartbeat Thread][VERBOSE] :: Thread starting");
+            System.out.println("[Heartbeat Thread][INFO] :: ServerID : " + ID);
             managementServer = (RMIHeartbeatInterface) Naming.lookup(RMIConnectionString);
-            String IPString = managementServer.hearbeatMethod(this.ID, this.socketAddress);//The initial update
-            DBHandler = new JDBCHandler();
-            DBHandler.setDatabaseServerAddressString(IPString);
+            String[] DBCredencials = managementServer.hearbeatMethod(this.ID, this.socketAddress);//The initial update
+            System.out.println("[Heartbeat Thread][VERBOSE] :: Creating DBHandler");
+            if (DBHandler == null)
+                DBHandler = new JDBCHandler(DBCredencials[0], DBCredencials[1], DBCredencials[2], DBCredencials[3]);
+            else {
+                DBHandler.setDatabaseServerAddressString(DBCredencials[0]);
+                DBHandler.setDatabasePortString(DBCredencials[1]);
+                DBHandler.setPassword(DBCredencials[3]);
+                DBHandler.setUsername(DBCredencials[2]);
+            }
+            System.out.println("[Heartbeat Thread][VERBOSE] :: DBHandler created");
         } catch (NotBoundException e) {
-            e.printStackTrace();
+            System.out.println("[Heartbeat Thread][ERROR] :: Heartbeat Server not found! Exiting!");
+            System.exit(-1);
         } catch (MalformedURLException e) {
-            e.printStackTrace();
+            System.out.println("[Heartbeat Thread][ERROR] :: Heartbeat Server URL invalid! Exiting!");
+            System.exit(-2);
         } catch (RemoteException e) {
-            e.printStackTrace();
+            System.out.println("[Heartbeat Thread][ERROR] :: Remote error on heartbeat service!");
+            System.err.println("[Heartbeat Thread][ERROR] :: Remote error on heartbeat service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
+            for (StackTraceElement ste : e.getStackTrace()) {
+                System.err.println(ste.toString());
+            }
+            System.exit(-3);
         }
         while (!isInterrupted()) {
             try {
-                Thread.sleep(HearbeatMiliseconds);
-                String IPString = managementServer.hearbeatMethod(this.ID, this.socketAddress);
-                DBHandler.setDatabaseServerAddressString(IPString);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+                try {
+                    Thread.sleep(HearbeatMiliseconds);
+                } catch (InterruptedException e) {
+                    System.out.println("[Heartbeat Thread][WARNING] :: Thread.sleep interrupted");
+                    System.err.println("[Heartbeat Thread][WARNING] :: Thread.sleep interrupted. Error : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStackTrace : ");
+                    for (StackTraceElement ste : e.getStackTrace()) {
+                        System.err.println(ste.toString());
+                    }
+                }
+                System.out.println("[Heartbeat Thread][VERBOSE] :: Calling heartbeat method");
+                String[] DBCredencials = managementServer.hearbeatMethod(this.ID, this.socketAddress);
+                System.out.println("[Heartbeat Thread][VERBOSE] :: DBHandler updated");
+                DBHandler.setDatabaseServerAddressString(DBCredencials[0]);
+                DBHandler.setDatabasePortString(DBCredencials[1]);
+                DBHandler.setPassword(DBCredencials[3]);
+                DBHandler.setUsername(DBCredencials[2]);
             } catch (RemoteException e) {
-                e.printStackTrace();
+                System.out.println("[Heartbeat Thread][WARNING] :: Remote error on heartbeat service!");
+                System.err.println("[Heartbeat Thread][WARNING] :: Remote error on heartbeat service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
+                for (StackTraceElement ste : e.getStackTrace()) {
+                    System.err.println(ste.toString());
+                }
+                System.exit(-3);
             }
         }
     }
@@ -70,5 +103,9 @@ public class RMIHeartbeatHandler extends Thread {
     @Override
     public void interrupt() {
         super.interrupt();
+    }
+
+    public JDBCHandler getDBHandler() {
+        return DBHandler;
     }
 }

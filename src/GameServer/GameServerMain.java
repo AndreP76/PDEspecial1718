@@ -16,12 +16,19 @@ public class GameServerMain {
     public static RMIHeartbeatHandler HeartbeatThread;
 
     public static void main(String args[]) {
+        System.out.println("\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n\n");
         if (args.length > 0) {
             try {
                 ManagementServerIP = Inet4Address.getByName(args[0]);
                 RequestsThread rt = new RequestsThread();
                 HeartbeatThread = new RMIHeartbeatHandler(args[0], rt.getSocketAddress());
                 HeartbeatThread.start();
+                try {
+                    Thread.sleep(3000);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
+                rt.setDBHandler(HeartbeatThread.getDBHandler());
                 rt.start();
                 Scanner sIN = new Scanner(System.in);
                 while (true) {
