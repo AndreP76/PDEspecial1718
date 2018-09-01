@@ -20,12 +20,11 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class RequestsThread extends Thread {
-    ServerSocket SS;
-    HashMap<String, GameInternalData> clientNamesToGames;
-
-    private HashMap<String, ObjectOutputStream> clientNamesToStreams;
-    private HashMap<String, RequestHandlerThreads> clientNamesToThreads;
-    private HashMap<String, Game> clientNamesToGameData;
+    private final HashMap<String, GameInternalData> clientNamesToGames = new HashMap<>();
+    private final HashMap<String, ObjectOutputStream> clientNamesToStreams = new HashMap<>();
+    private final HashMap<String, RequestHandlerThreads> clientNamesToThreads = new HashMap<>();
+    private final HashMap<String, Game> clientNamesToGameData = new HashMap<>();
+    private ServerSocket SS;
     private final ArrayList<PairInternalData> Pairs = new ArrayList<>();//final so we can sync it between threads
     private JDBCHandler DBHandler;
     private String DBHandlerConnectionString;
@@ -33,22 +32,13 @@ public class RequestsThread extends Thread {
     public RequestsThread() {
         try {
             SS = new ServerSocket(0, 256, InetAddress.getLocalHost());
-            clientNamesToGameData = new HashMap<>();
-            clientNamesToThreads = new HashMap<>();
-            clientNamesToGames = new HashMap<>();
-            clientNamesToStreams = new HashMap<>();
-
-            Runtime.getRuntime().addShutdownHook(new Thread() {
-                @Override
-                public void run() {
-                    for (PairInternalData p : Pairs) {
-                        DBHandler.DeactivatePair(p.getToken());
-                    }
-                }
-            });
         } catch (IOException e) {
             e.printStackTrace();
         }
+    }
+
+    public ArrayList<PairInternalData> getPairs() {
+        return Pairs;
     }
 
     @Override
@@ -73,6 +63,8 @@ public class RequestsThread extends Thread {
                             if (index != null) {//pair already loaded
                                 System.out.println("[RequestsThread][VERBOSE] :: Player pair already loaded. Finishing pair and starting game");
                                 Game PlayersGame = new Game(Pairs.get(index).getPlayerOne().getName(), Pairs.get(index).getPlayerTwo().getName());
+                                GameInternalData PlayersGameData = new GameInternalData(PlayersGame, Pairs.get(index));
+                                DBHandler.registerGame(PlayersGameData);
                                 System.out.println("[RequestsThread][VERBOSE] :: New game created");
                                 clientNamesToGameData.put(Pairs.get(index).getPlayerOne().getName(), PlayersGame);
                                 clientNamesToGameData.put(Pairs.get(index).getPlayerTwo().getName(), PlayersGame);
@@ -80,8 +72,8 @@ public class RequestsThread extends Thread {
 
                                 clientNamesToThreads.put(gp.getSender(), new RequestHandlerThreads(newClientSocket, fromClient, toClient, PlayerID, null, this));
                                 System.out.println("[RequestsThread][VERBOSE] :: Player thread created! Thread ID : " + clientNamesToThreads.get(gp.getSender()).getName() + ":" + clientNamesToThreads.get(gp.getSender()).getId());
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerOne().getName()).setThisPlayerGame(PlayersGame);
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerTwo().getName()).setThisPlayerGame(PlayersGame);
+                                clientNamesToThreads.get(Pairs.get(index).getPlayerOne().getName()).setThisPlayerGameData(PlayersGameData);
+                                clientNamesToThreads.get(Pairs.get(index).getPlayerTwo().getName()).setThisPlayerGameData(PlayersGameData);
                                 System.out.println("[RequestsThread][VERBOSE] :: Game data linked to player threads");
 
                                 clientNamesToStreams.put(gp.getSender(), toClient);
@@ -149,7 +141,7 @@ public class RequestsThread extends Thread {
         this.DBHandler = DBHandler;
     }
 
-    public void playerLeaving(PlayerInternalData leavingPlayer, Game leavingPlayerGame) {
+    public void playerLeaving(PlayerInternalData leavingPlayer, GameInternalData leavingPlayerGame) {
         //find player pair
         //find the players pair(as in, an actual player)
         //send player leaving notification
@@ -158,38 +150,64 @@ public class RequestsThread extends Thread {
         //deactivate the player pair on the database
         //remove pair from loaded pairs to save some memory
 
-        int pairIndex = findIndexOfPair(leavingPlayer.getName());
-        PairInternalData leavingPlayerPair = Pairs.get(pairIndex);
+        System.out.println("[RequestsThread][VERBOSE] :: playerLeaving method calling");
+        Integer pairIndex = findIndexOfPair(leavingPlayer.getName());//What is this ?
+        if (pairIndex != null) {
+            PairInternalData leavingPlayerPair = Pairs.get(pairIndex);
 
-        PlayerInternalData otherPlayer;
-        if (leavingPlayerPair.getPlayerOne().getName().equals(leavingPlayer.getName())) {
-            otherPlayer = leavingPlayerPair.getPlayerTwo();
-        } else if (leavingPlayerPair.getPlayerTwo().getName().equals(leavingPlayer.getName())) {
-            otherPlayer = leavingPlayerPair.getPlayerOne();
-        } else return;
+            PlayerInternalData otherPlayer;
+            System.out.println("[RequestsThread][VERBOSE] :: Finding leaving player pair");
+            if (leavingPlayerPair.getPlayerOne().getName().equals(leavingPlayer.getName())) {
+                otherPlayer = leavingPlayerPair.getPlayerTwo();
+            } else if (leavingPlayerPair.getPlayerTwo().getName().equals(leavingPlayer.getName())) {
+                otherPlayer = leavingPlayerPair.getPlayerOne();
+            } else return;
 
-        try {
-            synchronized (clientNamesToStreams) {
-                clientNamesToStreams.get(otherPlayer.getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, otherPlayer.getName(), GameCommand.PLAYER_LEFT));
+            try {
+                synchronized (clientNamesToStreams) {
+                    System.out.println("[RequestsThread][VERBOSE] :: Sending player leaving information to " + otherPlayer.getName());
+                    clientNamesToStreams.get(otherPlayer.getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, otherPlayer.getName(), GameCommand.PLAYER_LEFT));
+                    clientNamesToStreams.get(otherPlayer.getName()).writeObject(leavingPlayer);
+                }
+            } catch (IOException e) {
+                e.printStackTrace();
             }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
 
-        synchronized (clientNamesToThreads) {
-            clientNamesToThreads.get(otherPlayer.getName()).interrupt();
-        }
+            synchronized (clientNamesToThreads) {
+                System.out.println("[RequestsThread][VERBOSE] :: Interrupting other player thread");
+                clientNamesToThreads.get(otherPlayer.getName()).interrupt();
+            }
 
-        DBHandler.registerGame(leavingPlayerPair, leavingPlayerGame);
-        DBHandler.DeactivatePair(leavingPlayerPair.getToken());
+            System.out.println("[RequestsThread][VERBOSE] :: Logging game and deactivating pair");
+            DBHandler.updateGame(leavingPlayerGame);
+            try {
+                DBHandler.DeactivatePair(leavingPlayerPair.getToken());
+            } catch (SQLException e) {
+                System.out.println("[JDBC Test][DEBUG] :: Failed to deactivate pair!");
+            }
 
-        synchronized (Pairs) {
-            for (int i = 0; i < Pairs.size(); ++i) {
-                if (Pairs.get(i).getToken().equals(leavingPlayerPair.getToken())) {
-                    Pairs.remove(i);
-                    break;
+            synchronized (Pairs) {
+                System.out.println("[RequestsThread][VERBOSE] :: Removing pair from memory");
+                for (int i = 0; i < Pairs.size(); ++i) {
+                    if (Pairs.get(i).getToken().equals(leavingPlayerPair.getToken())) {
+                        System.out.println("[RequestsThread][VERBOSE] :: Pair removed from memory");
+                        Pairs.remove(i);
+                        break;
+                    }
                 }
             }
         }
+    }
+
+    public void IncreasePlayerRoundsWon(String name) {
+        DBHandler.IncreasePlayerRoundsWon(name, 1);
+    }
+
+    public void IncreasePlayerRoundsLost(String name) {
+        DBHandler.IncreasePlayerRoundsLost(name, 1);
+    }
+
+    public JDBCHandler getDBHandler() {
+        return DBHandler;
     }
 }

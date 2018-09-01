@@ -2,9 +2,9 @@ package GameClient.Forms;
 
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.RMIInterfaces.RMIManagementServerInterface;
+import GameClient.Forms.TableModels.ReadOnlyTableModel;
 
 import javax.swing.*;
-import javax.swing.table.DefaultTableModel;
 import javax.swing.table.TableCellRenderer;
 import java.awt.*;
 import java.awt.event.MouseEvent;
@@ -15,7 +15,6 @@ import java.util.ArrayList;
 import java.util.HashMap;
 
 public class LobbyForm extends UnicastRemoteObject {
-    //TODO : Add an see history button here
     //</editor-fold>
     //<editor-fold desc="Graphical Constants">
     private static final String NAME_COLUMN_TITLE = "Name";
@@ -29,14 +28,13 @@ public class LobbyForm extends UnicastRemoteObject {
     private static final int PLAY_COLUMN_INDEX = 3;
     private static final int JOIN_COLUMN_INDEX = 4;
     //<editor-fold desc="Graphical components">
-    private javax.swing.JButton btnCancelPair;
     private javax.swing.JLabel currentPairLbl;
     private javax.swing.JTextField currentPairNameBox;
-    private javax.swing.JButton jButton2;
     private javax.swing.JLabel jLabel1;
     private javax.swing.JScrollPane jScrollPane1;
     private javax.swing.JTable playersTable;
-    private javax.swing.JButton quitBtn;
+    private JButton quitBtn;
+    private JButton btnGameHistory;
     private JFrame jf;
     //
     private ReadOnlyTableModel playersTableModel;
@@ -113,7 +111,6 @@ public class LobbyForm extends UnicastRemoteObject {
                     try {
                         managementServer.requestPair(new PlayerInternalData(playername), lobbyHandler);
                     } catch (RemoteException e) {
-                        //TODO : HANDLE THIS THING
                         e.printStackTrace();
                     }
                 }
@@ -139,6 +136,17 @@ public class LobbyForm extends UnicastRemoteObject {
 
             }
         });
+        quitBtn.addActionListener(actionEvent -> {
+            try {
+                managementServer.logout(PID.getName());
+                System.exit(0);
+            } catch (RemoteException e) {
+                e.printStackTrace();
+            }
+        });
+        btnGameHistory.addActionListener(actionEvent -> {
+            HistoryForm hf = new HistoryForm(managementServer, PID);
+        });
     }
 
     private void addPlayerToTable(PlayerInternalData p) {
@@ -154,11 +162,9 @@ public class LobbyForm extends UnicastRemoteObject {
         playersTable = new javax.swing.JTable();
         currentPairLbl = new javax.swing.JLabel();
         currentPairNameBox = new javax.swing.JTextField();
-        btnCancelPair = new javax.swing.JButton();
-        jButton2 = new javax.swing.JButton();
         jLabel1 = new javax.swing.JLabel();
-        quitBtn = new javax.swing.JButton();
-
+        btnGameHistory = new JButton();
+        quitBtn = new JButton();
         playersTableModel = new ReadOnlyTableModel(null,
                 new String[]{
                         NAME_COLUMN_TITLE, WINS_COLUMN_TITLE, PAIR_COLUMN_TITLE, PLAY_COLUMN_TITLE, JOIN_COLUMN_TITLE
@@ -172,12 +178,12 @@ public class LobbyForm extends UnicastRemoteObject {
         playersTable.getColumn(JOIN_COLUMN_TITLE).setCellRenderer(tcr);
 
         currentPairLbl.setText("Current Pair : ");
-        btnCancelPair.setText("Cancel Pair");
-        jButton2.setText("Resign Game");
         jLabel1.setText("Players In Lobby");
         quitBtn.setText("Quit Lobby");
+        btnGameHistory.setText("Game History");
         currentPairNameBox.setFocusable(false);
         currentPairNameBox.setEditable(false);
+
         javax.swing.GroupLayout layout = new javax.swing.GroupLayout(j.getContentPane());
         j.getContentPane().setLayout(layout);
         layout.setHorizontalGroup(
@@ -185,19 +191,17 @@ public class LobbyForm extends UnicastRemoteObject {
                         .addGroup(layout.createSequentialGroup()
                                 .addContainerGap()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                                        .addComponent(jScrollPane1)
+                                        .addComponent(jScrollPane1, javax.swing.GroupLayout.DEFAULT_SIZE, 741, Short.MAX_VALUE)
                                         .addGroup(layout.createSequentialGroup()
                                                 .addGap(6, 6, 6)
                                                 .addComponent(currentPairLbl)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(currentPairNameBox, javax.swing.GroupLayout.PREFERRED_SIZE, 414, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(btnCancelPair)
-                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                                                .addComponent(jButton2, javax.swing.GroupLayout.DEFAULT_SIZE, 119, Short.MAX_VALUE))
+                                                .addComponent(currentPairNameBox))
                                         .addGroup(layout.createSequentialGroup()
                                                 .addComponent(jLabel1)
                                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                                                .addComponent(btnGameHistory)
+                                                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                                 .addComponent(quitBtn)))
                                 .addContainerGap())
         );
@@ -207,16 +211,15 @@ public class LobbyForm extends UnicastRemoteObject {
                                 .addContainerGap()
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                         .addComponent(jLabel1)
-                                        .addComponent(quitBtn))
+                                        .addComponent(quitBtn)
+                                        .addComponent(btnGameHistory))
                                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                                 .addComponent(jScrollPane1, javax.swing.GroupLayout.PREFERRED_SIZE, 401, javax.swing.GroupLayout.PREFERRED_SIZE)
                                 .addGap(18, 18, 18)
                                 .addGroup(layout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
                                         .addComponent(currentPairLbl)
-                                        .addComponent(currentPairNameBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                                        .addComponent(btnCancelPair)
-                                        .addComponent(jButton2))
-                                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                                        .addComponent(currentPairNameBox, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                                .addContainerGap(17, Short.MAX_VALUE))
         );
 
         j.pack();
@@ -233,17 +236,6 @@ public class LobbyForm extends UnicastRemoteObject {
         public Component getTableCellRendererComponent(JTable table, Object value, boolean isSelected, boolean hasFocus, int row, int column) {
             JButton button = (JButton) value;
             return button;
-        }
-    }
-
-    private class ReadOnlyTableModel extends DefaultTableModel {
-        ReadOnlyTableModel(Object[][] values, String[] titles) {
-            super(values, titles);
-        }
-
-        @Override
-        public boolean isCellEditable(int i, int i1) {
-            return false;
         }
     }
 }

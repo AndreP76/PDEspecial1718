@@ -40,6 +40,7 @@ public class GameForm {
         setupUI();
         this.thisPlayerID = thisPlayerID;
         gh = new GameHandler(gameServerIP, this.thisPlayerID);
+        frame.setTitle(thisPlayerID.getName());
         frame.setVisible(true);
         blockForm();
 
@@ -63,7 +64,7 @@ public class GameForm {
         gh.setOnGameStopped(new Consumer<Void>() {
             @Override
             public void accept(Void aVoid) {
-                //TODO
+                blockForm();
             }
         });
         gh.setOnGameUpdated(new Consumer<GameView>() {
@@ -75,7 +76,7 @@ public class GameForm {
         gh.setOnPlayerQuit(new Consumer<PlayerInternalData>() {//winner by default
             @Override
             public void accept(PlayerInternalData playerInternalData) {
-
+                //TODO STUFF HERE
             }
         });
 

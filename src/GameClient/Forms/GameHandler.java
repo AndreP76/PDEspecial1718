@@ -54,6 +54,9 @@ public class GameHandler extends Thread {
                     } else if (GP.getCommand() == GameCommand.WINNER_DECIDED) {
                         String winnerID = (String) fromServerData.readObject();
                         onWinnerDecided.accept(winnerID);
+                    } else if (GP.getCommand() == GameCommand.PLAYER_LEFT) {
+                        PlayerInternalData leavingPlayerID = (PlayerInternalData) fromServerData.readObject();
+                        onPlayerQuit.accept(leavingPlayerID);
                     }
                 }
             } catch (IOException e) {

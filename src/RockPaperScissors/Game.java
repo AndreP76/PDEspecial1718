@@ -60,6 +60,7 @@ public class Game extends Observable implements Serializable {
         PlayerChoices[0] = GameChoice.None;
         PlayerChoices[1] = GameChoice.None;
         winnerIndex = NOT_DECIDED_INDEX;
+        currentRound++;
         setChanged();
         notifyObservers();
     }
@@ -189,5 +190,21 @@ public class Game extends Observable implements Serializable {
         if (winnerIndex >= 0 && winnerIndex <= 1)
             return Players[winnerIndex];
         return null;
+    }
+
+    public int getCurrentGameRounds() {
+        return currentRound;
+    }
+
+    public int getDraws() {
+        return Draws;
+    }
+
+    public int getPlayer0Wins() {
+        return Player0Wins;
+    }
+
+    public int getPlayer1Wins() {
+        return Player1Wins;
     }
 }

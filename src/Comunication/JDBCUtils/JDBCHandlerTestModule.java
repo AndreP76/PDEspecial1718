@@ -5,7 +5,9 @@ import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
+import Utils.StringUtils;
 
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Scanner;
 
@@ -159,7 +161,8 @@ public class JDBCHandlerTestModule {
         j = new JDBCHandler("localhost", "3306", "pduser", "pduser");
 
         if (TestConnection()) {
-            TestRetrieval();
+            //TestRetrieval();
+            TestPairDeactivation();
             /*TestQuickRetrieval();
             TestAllUsersQuick();
             TestAllUsersFull();
@@ -171,6 +174,34 @@ public class JDBCHandlerTestModule {
             TestAllUsersQuick();
             TestUserDeletion();
             TestAllUsersFull();*/
+        }
+    }
+
+    private static void TestPairDeactivation() {
+        String PlayerOneName = StringUtils.RandomLetters(6);
+        String PlayerTwoName = StringUtils.RandomLetters(6);
+        j.CreateUser(PlayerOneName, StringUtils.RandomAlfa(6), StringUtils.RandomLetters(12));
+        System.out.println("[JDBC Test][DEBUG] :: Created player one : " + PlayerOneName);
+        j.CreateUser(PlayerTwoName, StringUtils.RandomAlfa(6), StringUtils.RandomLetters(12));
+        System.out.println("[JDBC Test][DEBUG] :: Created player two : " + PlayerTwoName);
+
+        PlayerInternalData PlayerOneID = j.RetrievePlayer(PlayerOneName);
+        System.out.println("[JDBC Test][DEBUG] :: Retrieved Player One");
+        PlayerInternalData PlayerTwoID = j.RetrievePlayer(PlayerTwoName);
+        System.out.println("[JDBC Test][DEBUG] :: Retrieved Player Two");
+
+        String OneTwoPairID = StringUtils.RandomAlfa(32);
+        try {
+            j.createNewPair(PlayerOneID, PlayerTwoID, OneTwoPairID, true);
+            System.out.println("[JDBC Test][DEBUG] :: Created new pair [" + OneTwoPairID + "]");
+            try {
+                j.DeactivatePair(OneTwoPairID);
+                System.out.println("[JDBC Test][DEBUG] :: Deactivated pair");
+            } catch (SQLException e) {
+                System.out.println("[JDBC Test][DEBUG] :: Deactivation of pair failed");
+            }
+        } catch (SQLException e) {
+            System.out.println("[JDBC Test][DEBUG] :: Creation of pair failed");
         }
     }
 }

@@ -1,5 +1,6 @@
 package Comunication.RMIInterfaces;
 
+import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 
 import java.rmi.Remote;
@@ -31,4 +32,6 @@ public interface RMIManagementServerInterface extends Remote {
     ArrayList<PlayerInternalData> getActivePlayersData() throws RemoteException;
 
     String getGameServerIP() throws RemoteException;
+
+    ArrayList<GameInternalData> getPlayerGames(PlayerInternalData playerID) throws RemoteException;
 }

@@ -3,6 +3,7 @@ package ManagementServer;
 import Comunication.ChatUtils.RMIChat.RMIChatRoomModule;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
+import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.JDBCUtils.JDBCHandler;
@@ -244,5 +245,10 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     @Override
     public String getGameServerIP() {
         return RMIHS.getGameServerIP();
+    }
+
+    @Override
+    public ArrayList<GameInternalData> getPlayerGames(PlayerInternalData playerID) {
+        return DBHandler.retriveAllGamesForPlayer(playerID.getName());
     }
 }

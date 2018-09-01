@@ -2,15 +2,14 @@ package GameServer;
 
 import Comunication.ChatUtils.TCPChat.GameCommand;
 import Comunication.ChatUtils.TCPChat.GamePacket;
+import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import GameClient.Forms.GameForm;
 import RockPaperScissors.Game;
 import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
 
-import java.io.IOException;
-import java.io.ObjectInputStream;
-import java.io.ObjectOutputStream;
+import java.io.*;
 import java.net.Socket;
 import java.util.Observable;
 import java.util.Observer;
@@ -20,19 +19,19 @@ public class RequestHandlerThreads extends Thread implements Observer {
     private ObjectInputStream fromClientStream;
     private Socket clientSocket;
     private PlayerInternalData thisPlayer;
-    private Game thisPlayerGame;
+    int gameRound = 0;
     private RequestsThread masterThread;
-    //have game here, add thread as observer, and on update send new view ? Sounds good
+    private GameInternalData thisPlayerGameData;
 
 
-    public RequestHandlerThreads(Socket newClientSocket, ObjectInputStream fromClient, ObjectOutputStream toClient, PlayerInternalData playerID, Game thisPlayerGame, RequestsThread masterThread) {
+    public RequestHandlerThreads(Socket newClientSocket, ObjectInputStream fromClient, ObjectOutputStream toClient, PlayerInternalData playerID, GameInternalData thisPlayerGame, RequestsThread masterThread) {
         toClientStream = toClient;
         fromClientStream = fromClient;
         clientSocket = newClientSocket;
         thisPlayer = playerID;
-        this.thisPlayerGame = thisPlayerGame;
+        this.thisPlayerGameData = thisPlayerGame;
         if (thisPlayerGame != null) {
-            thisPlayerGame.addObserver(this);
+            thisPlayerGame.getG().addObserver(this);
         }
         this.masterThread = masterThread;
     }
@@ -47,16 +46,18 @@ public class RequestHandlerThreads extends Thread implements Observer {
                 if (gp.getCommand() == GameCommand.MAKE_PLAY) {
                     System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Message was a move");
                     GameChoice GC = (GameChoice) fromClientStream.readObject();
-                    if (!thisPlayerGame.hasPlayerChoosen(gp.getSender())) {
-                        thisPlayerGame.Play(gp.getSender(), GC);
+                    if (!thisPlayerGameData.getG().hasPlayerChoosen(gp.getSender())) {
+                        thisPlayerGameData.getG().Play(gp.getSender(), GC);
                     }
+                    SerializeGameToFile(thisPlayerGameData);
                 } else if (gp.getCommand() == GameCommand.PLAYER_LEAVING) {//Oh my, how rude
-                    masterThread.playerLeaving(thisPlayer, thisPlayerGame);
+                    System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Message was a leaving notification");
+                    masterThread.playerLeaving(thisPlayer, thisPlayerGameData);
                     return;
                 }
             } catch (IOException e) {
                 System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][ERROR] :: IOException occurred! Thread terminating");
-                masterThread.playerLeaving(thisPlayer, thisPlayerGame);
+                masterThread.playerLeaving(thisPlayer, thisPlayerGameData);
                 return;
             } catch (ClassNotFoundException e) {
                 System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][WARNING] :: ClassNotFound occurred!");
@@ -64,13 +65,31 @@ public class RequestHandlerThreads extends Thread implements Observer {
         }
     }
 
+    private void SerializeGameToFile(GameInternalData thisPlayerGameData) {
+        File newFile = new File(GameServerMain.SAVEDGAMES_FOLDER);
+        if (!newFile.exists()) {
+            if (!newFile.mkdirs()) {
+                return;
+            }
+        }
+        String newFilePath = GameServerMain.SAVEDGAMES_FOLDER + "/" + thisPlayerGameData.getGameToken() + ".bin";
+        ObjectOutputStream out = null;
+        try {
+            out = new ObjectOutputStream(new FileOutputStream(newFilePath));
+            out.writeObject(thisPlayerGameData);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
     @Override
     public void update(Observable observable, Object o) {
         System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Players game was updated");
-        GameView GV = thisPlayerGame.generateGameView();
-        if (thisPlayerGame.getWinnerIndex() != Game.NOT_DECIDED_INDEX) {//We have a winner
+        GameView GV = thisPlayerGameData.getG().generateGameView();
+        if (thisPlayerGameData.getG().getWinnerIndex() != Game.NOT_DECIDED_INDEX) {//We have a winner
             GamePacket GP = new GamePacket(GameServerMain.GAMESERVER_NAME, thisPlayer.getName(), GameCommand.WINNER_DECIDED);
-            if (thisPlayerGame.getWinnerIndex() == Game.DRAW_INDEX) {
+            if (thisPlayerGameData.getG().getWinnerIndex() == Game.DRAW_INDEX) {
                 try {
                     toClientStream.writeObject(GP);
                     toClientStream.writeObject(GameForm.DRAW_NAME);
@@ -78,15 +97,26 @@ public class RequestHandlerThreads extends Thread implements Observer {
                     e.printStackTrace();
                 }
             } else {
-                if (thisPlayerGame.getPlayerNameByIndex(thisPlayerGame.getWinnerIndex()).equals(thisPlayer.getName())) {
-                    //TODO : increment the number of rounds won on the database
+                if (thisPlayerGameData.getG().getPlayerNameByIndex(thisPlayerGameData.getG().getWinnerIndex()).equals(thisPlayer.getName())) {
+                    masterThread.IncreasePlayerRoundsWon(thisPlayer.getName());
+                } else {
+                    masterThread.IncreasePlayerRoundsLost(thisPlayer.getName());
                 }
                 try {
                     toClientStream.writeObject(GP);
-                    toClientStream.writeObject(thisPlayerGame.getPlayerNameByIndex(thisPlayerGame.getWinnerIndex()));
+                    toClientStream.writeObject(thisPlayerGameData.getG().getPlayerNameByIndex(thisPlayerGameData.getG().getWinnerIndex()));
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
+            }
+        } else if (gameRound != thisPlayerGameData.getG().getCurrentGameRounds()) {
+            gameRound = thisPlayerGameData.getG().getCurrentGameRounds();
+            //Send the startgame again, so the forms unblock
+            try {
+                toClientStream.writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, thisPlayer.getName(), GameCommand.STARTED));
+                toClientStream.writeObject(GV);
+            } catch (IOException e) {
+                e.printStackTrace();
             }
         } else {
             GamePacket GP = new GamePacket(GameServerMain.GAMESERVER_NAME, thisPlayer.getName(), GameCommand.UPDATED);
@@ -100,13 +130,27 @@ public class RequestHandlerThreads extends Thread implements Observer {
         }
     }
 
-    public void setThisPlayerGame(Game thisPlayerGame) {
-        if (this.thisPlayerGame != null) {
-            this.thisPlayerGame.deleteObserver(this);
+    public void setThisPlayerGameData(GameInternalData thisPlayerGameData) {
+        if (this.thisPlayerGameData != null) {
+            if (this.thisPlayerGameData.getG() != null) {
+                this.thisPlayerGameData.getG().deleteObserver(this);
+            }
         }
-        this.thisPlayerGame = thisPlayerGame;
-        if (this.thisPlayerGame != null) {
-            this.thisPlayerGame.addObserver(this);
+        this.thisPlayerGameData = thisPlayerGameData;
+        if (this.thisPlayerGameData != null) {
+            if (this.thisPlayerGameData.getG() != null) {
+                this.thisPlayerGameData.getG().addObserver(this);
+            }
+        }
+    }
+
+    public void setThisPlayerGame(Game thisPlayerGame) {
+        if (this.thisPlayerGameData.getG() != null) {
+            this.thisPlayerGameData.getG().deleteObserver(this);
+        }
+        this.thisPlayerGameData.setG(thisPlayerGame, this);
+        if (this.thisPlayerGameData.getG() != null) {
+            this.thisPlayerGameData.getG().addObserver(this);
         }
     }
 }

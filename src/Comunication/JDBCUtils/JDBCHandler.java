@@ -4,9 +4,9 @@ import Comunication.JDBCUtils.DBExceptions.AuthenticationSQLError;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLoginException;
 import Comunication.JDBCUtils.DBExceptions.DuplicateLogoutException;
 import Comunication.JDBCUtils.DBExceptions.UnknownUserException;
+import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
-import RockPaperScissors.Game;
 
 import java.sql.*;
 import java.util.ArrayList;
@@ -21,35 +21,6 @@ public class JDBCHandler {
 
     String username;
     String password;
-
-    public JDBCHandler(String serverIP, String port, String username, String password) {
-        this.databaseServerAddressString = serverIP;
-        this.databasePortString = port;
-        this.username = username;
-        this.password = password;
-
-        connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
-    }
-
-    public JDBCHandler(String serverIP, String port) {
-        this(serverIP, port, "pduser", "pduser");
-    }
-
-    public JDBCHandler(String serverIP) {
-        this(serverIP, "3306", "pduser", "pduser");
-    }
-
-    public JDBCHandler() {
-        this("127.0.0.1", "3306", "pduser", "pduser");
-    }
-
-    public boolean ConnectToDB() {
-        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
-            return true;
-        } catch (SQLException sqlex) {
-            return false;
-        }
-    }
 
     //<editor-fold desc="Users">
     @Deprecated
@@ -267,6 +238,19 @@ public class JDBCHandler {
         }
     }
 
+    public JDBCHandler(String serverIP, String port, String username, String password) {
+        this.databaseServerAddressString = serverIP;
+        this.databasePortString = port;
+        this.username = username;
+        this.password = password;
+
+        connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
+    }
+
+    public JDBCHandler(String serverIP, String port) {
+        this(serverIP, port, "pduser", "pduser");
+    }
+
     public ArrayList<PlayerInternalData> getPairedClients() throws SQLException {
         ArrayList<PlayerInternalData> PIDS = new ArrayList<>();
         try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
@@ -308,7 +292,6 @@ public class JDBCHandler {
             return null;
         }
     }
-
     //</editor-fold>
     //<editor-fold desc="Pairs">
     public PairInternalData getPair(String token) throws SQLException {
@@ -339,14 +322,8 @@ public class JDBCHandler {
         }
     }
 
-    public void DeactivatePair(String token) {
-        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
-            Statement S = con.createStatement();
-            String newPairQuery = "UPDATE Pairs SET Active = 0 WHERE BINARY Token = '" + token + "';";
-            S.execute(newPairQuery);
-        } catch (SQLException e) {
-            e.printStackTrace();
-        }
+    public JDBCHandler(String serverIP) {
+        this(serverIP, "3306", "pduser", "pduser");
     }
 
     public PairInternalData createNewPair(PlayerInternalData P1, PlayerInternalData P2, String token, boolean active) throws SQLException {
@@ -387,18 +364,37 @@ public class JDBCHandler {
         }
     }
 
-    public PairInternalData getPlayerActivePair(String name) throws SQLException {
-        try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
-            String query = "SELECT * FROM Pairs WHERE PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "') OR PlayerTwo IN (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 1;";
-            ResultSet rs = c.createStatement().executeQuery(query);
-            if (rs != null) {
-                if (rs.next()) {
-                    return new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), rs.getString("Token"), rs.getInt("ID"), rs.getInt("Active") == 1);
-                } else return null;
-            } else return null;
+    public JDBCHandler() {
+        this("127.0.0.1", "3306", "pduser", "pduser");
+    }
+
+    public void IncreasePlayerRoundsWon(String name, int ammount) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "UPDATE Users SET WonRounds = WonRounds + " + ammount + " WHERE Name = '" + name + "';";
+            s.execute(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
         }
     }
 
+    public void IncreasePlayerRoundsLost(String name, int ammount) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "UPDATE Users SET LostRounds = LostRounds + " + ammount + " WHERE Name = '" + name + "';";
+            s.execute(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void DeactivatePair(String token) throws SQLException {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement S = con.createStatement();
+            String newPairQuery = "UPDATE Pairs SET Active = 0 WHERE BINARY Token = '" + token + "';";
+            S.execute(newPairQuery);
+        }
+    }
     //</editor-fold>
     //<editor-fold desc="Getters">
     public String getDatabaseServerAddressString() {
@@ -412,6 +408,30 @@ public class JDBCHandler {
     }
     public String getDatabasePortString() {
         return databasePortString;
+    }
+
+    public PairInternalData getPlayerActivePair(String name) throws SQLException {
+        try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
+            String query = "SELECT * FROM Pairs WHERE PlayerID IN ((SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 1) OR (PlayerTwo IN (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 1);";
+            ResultSet rs = c.createStatement().executeQuery(query);
+            if (rs != null) {
+                if (rs.next()) {
+                    return new PairInternalData(RetrievePlayer(rs.getInt("PlayerID")), RetrievePlayer(rs.getInt("PlayerTwo")), rs.getString("Token"), rs.getInt("ID"), rs.getInt("Active") == 1);
+                } else return null;
+            } else return null;
+        }
+    }
+
+    //</editor-fold>
+    //<editor-fold desc="Games">
+    public void updateGame(GameInternalData playersGame) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "UPDATE Games SET ScorePlayerTwo = " + playersGame.getScorePlayerTwo() + ", ScorePlayerOne = " + playersGame.getScorePlayerOne() + ", Draws = " + playersGame.getScoreDraws() + " WHERE GameToken = '" + playersGame.getGameToken() + "';";
+            s.execute(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
     }
 
     //</editor-fold>
@@ -441,6 +461,34 @@ public class JDBCHandler {
         connectionString = "jdbc:mysql://" + databaseServerAddressString + ":" + databasePortString + "/" + databaseNameString + "?" + connectionParameters;
     }
 
+    public void registerGame(GameInternalData playersGame) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "INSERT INTO Games (GameToken,ScorePlayerOne,ScorePlayerTwo,Draws,PairID) VALUES('" + playersGame.getGameToken() + "'," + playersGame.getScorePlayerOne() + "," + playersGame.getScorePlayerTwo() + "," + playersGame.getScoreDraws() + "," + playersGame.getPlayingPair().getID() + ");";//TODO
+            s.execute(query);
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public ArrayList<GameInternalData> retriveAllGamesForPlayer(String name) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "SELECT * FROM Games WHERE PairID IN (SELECT ID FROM Pairs WHERE PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "') OR PlayerTwo IN  (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 0)";
+            ResultSet rs = s.executeQuery(query);
+            if (rs != null) {
+                ArrayList<GameInternalData> GID = new ArrayList<>();
+                while (rs.next()) {
+                    GID.add(new GameInternalData(rs.getInt("ScorePlayerOne"), rs.getInt("ScorePlayerTwo"), rs.getInt("Draws"), getPair(rs.getInt("PairID")), rs.getString("GameToken")));
+                }
+                return GID;
+            } else return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     public String getUsername() {
         return username;
     }
@@ -449,15 +497,12 @@ public class JDBCHandler {
         return password;
     }
 
-    public void registerGame(PairInternalData leavingPlayerPair, Game leavingPlayerGame) {
-        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
-            Statement s = con.createStatement();
-            String Query = "";
-
-        } catch (SQLException e) {
-            e.printStackTrace();
+    public boolean ConnectToDB() {
+        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
+            return true;
+        } catch (SQLException sqlex) {
+            return false;
         }
     }
-
     //</editor-fold>
 }

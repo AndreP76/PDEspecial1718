@@ -1,10 +1,13 @@
 package GameServer;
 
+import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.RMIHandlers.RMIHeartbeatHandler;
 
+import java.io.File;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.sql.SQLException;
 import java.util.Scanner;
 
 public class GameServerMain {
@@ -30,6 +33,31 @@ public class GameServerMain {
                 }
                 rt.setDBHandler(HeartbeatThread.getDBHandler());
                 rt.start();
+                Runtime.getRuntime().addShutdownHook(new Thread() {
+                    @Override
+                    public void run() {
+                        System.out.println("[Game Server][INFO] :: Shutdown hook One called");
+                        File f = new File(SAVEDGAMES_FOLDER);
+                        File[] filesInFolder = f.listFiles();
+                        if (filesInFolder != null) {
+                            for (File file : filesInFolder) {
+                                if (!file.isDirectory()) {
+                                    file.delete();
+                                    System.out.println("[Game Server][VERBOSE] :: Deleting " + file.getAbsolutePath());
+                                }
+                            }
+                        }
+                        System.out.println("[Game Server][INFO] :: Shutdown hook Two called");
+                        for (PairInternalData p : rt.getPairs()) {
+                            System.out.println("[Game Server][VERBOSE] :: Deactivating " + p.getToken());
+                            try {
+                                rt.getDBHandler().DeactivatePair(p.getToken());
+                            } catch (SQLException e) {
+                                System.out.println("[Game Server][ERROR] :: Failed to deactivate pair [" + p.getToken() + "]");
+                            }
+                        }
+                    }
+                });
                 Scanner sIN = new Scanner(System.in);
                 while (true) {
                     System.out.print("Command : ");
