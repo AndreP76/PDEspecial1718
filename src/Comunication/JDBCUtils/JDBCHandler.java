@@ -434,6 +434,40 @@ public class JDBCHandler {
         }
     }
 
+    public GameInternalData retrieveGame(String gameToken) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "SELECT * FROM Games WHERE BINARY GameToken = '" + gameToken + "';";
+            ResultSet rs = s.executeQuery(query);
+            if (rs != null) {
+                if (rs.next()) {
+                    return new GameInternalData(rs.getInt("ScorePlayerOne"), rs.getInt("ScorePlayerTwo"), rs.getInt("Draws"), getPair(rs.getInt("PairID")), rs.getString("GameToken"));
+                } else return null;
+            } else return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
+    public ArrayList<GameInternalData> retriveAllGamesForPlayer(String name) {
+        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
+            Statement s = con.createStatement();
+            String query = "SELECT * FROM Games WHERE PairID IN (SELECT ID FROM Pairs WHERE PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "') OR PlayerTwo IN  (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 0)";
+            ResultSet rs = s.executeQuery(query);
+            if (rs != null) {
+                ArrayList<GameInternalData> GID = new ArrayList<>();
+                while (rs.next()) {
+                    GID.add(new GameInternalData(rs.getInt("ScorePlayerOne"), rs.getInt("ScorePlayerTwo"), rs.getInt("Draws"), getPair(rs.getInt("PairID")), rs.getString("GameToken")));
+                }
+                return GID;
+            } else return null;
+        } catch (SQLException e) {
+            e.printStackTrace();
+            return null;
+        }
+    }
+
     //</editor-fold>
     //<editor-fold desc="Setters">
     public void setDatabaseServerAddressString(String databaseServerAddressString) {
@@ -468,24 +502,6 @@ public class JDBCHandler {
             s.execute(query);
         } catch (SQLException e) {
             e.printStackTrace();
-        }
-    }
-
-    public ArrayList<GameInternalData> retriveAllGamesForPlayer(String name) {
-        try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
-            Statement s = con.createStatement();
-            String query = "SELECT * FROM Games WHERE PairID IN (SELECT ID FROM Pairs WHERE PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "') OR PlayerTwo IN  (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 0)";
-            ResultSet rs = s.executeQuery(query);
-            if (rs != null) {
-                ArrayList<GameInternalData> GID = new ArrayList<>();
-                while (rs.next()) {
-                    GID.add(new GameInternalData(rs.getInt("ScorePlayerOne"), rs.getInt("ScorePlayerTwo"), rs.getInt("Draws"), getPair(rs.getInt("PairID")), rs.getString("GameToken")));
-                }
-                return GID;
-            } else return null;
-        } catch (SQLException e) {
-            e.printStackTrace();
-            return null;
         }
     }
 

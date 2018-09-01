@@ -22,7 +22,7 @@ public class GameInternalData implements Serializable {
     //then pass this to the handling threads
     //when a game is updated, the handling threads can serialize the game to a binary file on the savegames folder, with the same name as this token
 
-    GameInternalData(Game G, PairInternalData playingPair, String gameToken) {
+    public GameInternalData(Game G, PairInternalData playingPair, String gameToken) {
         this.G = G;
         this.playingPair = playingPair;
         this.gameToken = gameToken;
@@ -77,5 +77,9 @@ public class GameInternalData implements Serializable {
 
     public void setG(Game thisPlayerGame, RequestHandlerThreads requestHandlerThreads) {
         this.G = thisPlayerGame;
+    }
+
+    public void setPlayingPair(PairInternalData playingPair) {
+        this.playingPair = playingPair;
     }
 }

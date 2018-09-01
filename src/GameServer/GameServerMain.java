@@ -1,9 +1,10 @@
 package GameServer;
 
+import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.RMIHandlers.RMIHeartbeatHandler;
 
-import java.io.File;
+import java.io.*;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -37,16 +38,7 @@ public class GameServerMain {
                     @Override
                     public void run() {
                         System.out.println("[Game Server][INFO] :: Shutdown hook One called");
-                        File f = new File(SAVEDGAMES_FOLDER);
-                        File[] filesInFolder = f.listFiles();
-                        if (filesInFolder != null) {
-                            for (File file : filesInFolder) {
-                                if (!file.isDirectory()) {
-                                    file.delete();
-                                    System.out.println("[Game Server][VERBOSE] :: Deleting " + file.getAbsolutePath());
-                                }
-                            }
-                        }
+                        deleteSavedGames();
                         System.out.println("[Game Server][INFO] :: Shutdown hook Two called");
                         for (PairInternalData p : rt.getPairs()) {
                             System.out.println("[Game Server][VERBOSE] :: Deactivating " + p.getToken());
@@ -76,5 +68,65 @@ public class GameServerMain {
 
     private static void usage() {
         System.out.println("usage : program.jar <managementServerIP>");
+    }
+
+    public static String[] findAvailableSavedGames() {
+        File savesFolder = new File(SAVEDGAMES_FOLDER);
+        File[] savedGames = savesFolder.listFiles();
+        if (savedGames != null) {
+            String[] savedGamesTokens = new String[savedGames.length];
+            for (int i = 0; i < savedGames.length; ++i) {
+                try {
+                    String canonicalPath = savedGames[i].getCanonicalPath();
+                    savedGamesTokens[i] = canonicalPath.substring(canonicalPath.lastIndexOf("/") + 1, canonicalPath.lastIndexOf("."));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+            return savedGamesTokens;
+        } else return null;
+    }
+
+    public static GameInternalData loadGame(String game) {
+        File gameFile = new File(SAVEDGAMES_FOLDER + "/" + game + ".bin");
+        try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(gameFile))) {
+            return (GameInternalData) ois.readObject();
+        } catch (IOException e) {
+            System.out.println("[Game Server][ERROR] :: Failed to load game [" + game + "]");
+        } catch (ClassNotFoundException e) {
+            System.out.println("[Game Server][ERROR] :: Failed to load game [" + game + "]\nCould not interpret class!");
+        }
+        return null;
+    }
+
+    static void saveGame(GameInternalData thisPlayerGameData) {
+        File newFile = new File(GameServerMain.SAVEDGAMES_FOLDER);
+        if (!newFile.exists()) {
+            if (!newFile.mkdirs()) {
+                return;
+            }
+        }
+        String newFilePath = GameServerMain.SAVEDGAMES_FOLDER + "/" + thisPlayerGameData.getGameToken() + ".bin";
+        ObjectOutputStream out = null;
+        try {
+            out = new ObjectOutputStream(new FileOutputStream(newFilePath));
+            out.writeObject(thisPlayerGameData);
+            out.close();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public static void deleteSavedGames() {
+        File f = new File(SAVEDGAMES_FOLDER);
+        File[] filesInFolder = f.listFiles();
+        if (filesInFolder != null) {
+            for (File file : filesInFolder) {
+                if (!file.isDirectory()) {
+                    file.delete();
+                    System.out.println("[Game Server][VERBOSE] :: Deleting " + file.getAbsolutePath());
+                }
+            }
+        }
     }
 }

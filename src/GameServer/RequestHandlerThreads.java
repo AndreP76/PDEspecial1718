@@ -9,7 +9,9 @@ import RockPaperScissors.Game;
 import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
 
-import java.io.*;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.net.Socket;
 import java.util.Observable;
 import java.util.Observer;
@@ -49,7 +51,7 @@ public class RequestHandlerThreads extends Thread implements Observer {
                     if (!thisPlayerGameData.getG().hasPlayerChoosen(gp.getSender())) {
                         thisPlayerGameData.getG().Play(gp.getSender(), GC);
                     }
-                    SerializeGameToFile(thisPlayerGameData);
+                    GameServerMain.saveGame(thisPlayerGameData);
                 } else if (gp.getCommand() == GameCommand.PLAYER_LEAVING) {//Oh my, how rude
                     System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Message was a leaving notification");
                     masterThread.playerLeaving(thisPlayer, thisPlayerGameData);
@@ -62,24 +64,6 @@ public class RequestHandlerThreads extends Thread implements Observer {
             } catch (ClassNotFoundException e) {
                 System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][WARNING] :: ClassNotFound occurred!");
             }
-        }
-    }
-
-    private void SerializeGameToFile(GameInternalData thisPlayerGameData) {
-        File newFile = new File(GameServerMain.SAVEDGAMES_FOLDER);
-        if (!newFile.exists()) {
-            if (!newFile.mkdirs()) {
-                return;
-            }
-        }
-        String newFilePath = GameServerMain.SAVEDGAMES_FOLDER + "/" + thisPlayerGameData.getGameToken() + ".bin";
-        ObjectOutputStream out = null;
-        try {
-            out = new ObjectOutputStream(new FileOutputStream(newFilePath));
-            out.writeObject(thisPlayerGameData);
-            out.close();
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 

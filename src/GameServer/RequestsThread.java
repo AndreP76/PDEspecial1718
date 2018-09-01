@@ -62,34 +62,69 @@ public class RequestsThread extends Thread {
                             Integer index = findIndexOfPair(gp.getSender());
                             if (index != null) {//pair already loaded
                                 System.out.println("[RequestsThread][VERBOSE] :: Player pair already loaded. Finishing pair and starting game");
-                                Game PlayersGame = new Game(Pairs.get(index).getPlayerOne().getName(), Pairs.get(index).getPlayerTwo().getName());
-                                GameInternalData PlayersGameData = new GameInternalData(PlayersGame, Pairs.get(index));
-                                DBHandler.registerGame(PlayersGameData);
-                                System.out.println("[RequestsThread][VERBOSE] :: New game created");
-                                clientNamesToGameData.put(Pairs.get(index).getPlayerOne().getName(), PlayersGame);
-                                clientNamesToGameData.put(Pairs.get(index).getPlayerTwo().getName(), PlayersGame);
+                                PairInternalData startingPairID = Pairs.get(index);
+                                //list available games on the save folder
+                                //retrieve data for said games
+                                //retrieve players for those games
+                                //if there is a game where both players equal these two players
+                                //game = loadSerializedGame, fuck the pair
+                                //else game = new Game
+                                Game PlayersGame = null;
+                                GameInternalData PlayersGameData = null;
+
+                                String[] availableGameTokens = GameServerMain.findAvailableSavedGames();
+                                if (availableGameTokens != null) {
+                                    for (String game : availableGameTokens) {
+                                        GameInternalData GID = DBHandler.retrieveGame(game);
+                                        String gamePlayerOne = GID.getPlayingPair().getPlayerOne().getName();
+                                        String gamePlayerTwo = GID.getPlayingPair().getPlayerTwo().getName();
+                                        String pairPlayerOne = startingPairID.getPlayerOne().getName();
+                                        String pairPlayerTwo = startingPairID.getPlayerTwo().getName();
+
+                                        if ((gamePlayerOne.equals(pairPlayerOne) && gamePlayerTwo.equals(pairPlayerTwo)) || (gamePlayerOne.equals(pairPlayerTwo) && gamePlayerTwo.equals(pairPlayerOne))) {
+                                            //this is a game played by these two
+                                            PlayersGameData = GameServerMain.loadGame(game);
+                                            if (PlayersGameData == null || PlayersGameData.getG() == null) {
+                                                PlayersGameData = null;//null so the game gets recreated and nobody has to know we tried to load a game
+                                            } else {
+                                                PlayersGameData.setPlayingPair(startingPairID);
+                                                PlayersGame = PlayersGameData.getG();
+                                                System.out.println("[RequestsThread][VERBOSE] :: Old game loaded");
+                                            }
+                                        }
+                                    }
+                                }
+                                if (PlayersGame == null) {
+                                    PlayersGame = new Game(startingPairID.getPlayerOne().getName(), startingPairID.getPlayerTwo().getName());
+                                    PlayersGameData = new GameInternalData(PlayersGame, startingPairID);
+                                    DBHandler.registerGame(PlayersGameData);
+                                    System.out.println("[RequestsThread][VERBOSE] :: New game created");
+                                }
+
+                                clientNamesToGameData.put(startingPairID.getPlayerOne().getName(), PlayersGame);
+                                clientNamesToGameData.put(startingPairID.getPlayerTwo().getName(), PlayersGame);
                                 System.out.println("[RequestsThread][VERBOSE] :: Game data assigned to players");
 
                                 clientNamesToThreads.put(gp.getSender(), new RequestHandlerThreads(newClientSocket, fromClient, toClient, PlayerID, null, this));
                                 System.out.println("[RequestsThread][VERBOSE] :: Player thread created! Thread ID : " + clientNamesToThreads.get(gp.getSender()).getName() + ":" + clientNamesToThreads.get(gp.getSender()).getId());
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerOne().getName()).setThisPlayerGameData(PlayersGameData);
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerTwo().getName()).setThisPlayerGameData(PlayersGameData);
+                                clientNamesToThreads.get(startingPairID.getPlayerOne().getName()).setThisPlayerGameData(PlayersGameData);
+                                clientNamesToThreads.get(startingPairID.getPlayerTwo().getName()).setThisPlayerGameData(PlayersGameData);
                                 System.out.println("[RequestsThread][VERBOSE] :: Game data linked to player threads");
 
                                 clientNamesToStreams.put(gp.getSender(), toClient);
                                 GameView GV = PlayersGame.generateGameView();
                                 System.out.println("[RequestsThread][VERBOSE] :: Game view generated");
-                                clientNamesToStreams.get(Pairs.get(index).getPlayerOne().getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, Pairs.get(index).getPlayerOne().getName(), GameCommand.STARTED));
+                                clientNamesToStreams.get(startingPairID.getPlayerOne().getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, Pairs.get(index).getPlayerOne().getName(), GameCommand.STARTED));
                                 System.out.println("[RequestsThread][VERBOSE] :: Sent game start packet to player one");
-                                clientNamesToStreams.get(Pairs.get(index).getPlayerOne().getName()).writeObject(GV);
+                                clientNamesToStreams.get(startingPairID.getPlayerOne().getName()).writeObject(GV);
                                 System.out.println("[RequestsThread][VERBOSE] :: Sent game view to player one");
-                                clientNamesToStreams.get(Pairs.get(index).getPlayerTwo().getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, Pairs.get(index).getPlayerTwo().getName(), GameCommand.STARTED));
+                                clientNamesToStreams.get(startingPairID.getPlayerTwo().getName()).writeObject(new GamePacket(GameServerMain.GAMESERVER_NAME, Pairs.get(index).getPlayerTwo().getName(), GameCommand.STARTED));
                                 System.out.println("[RequestsThread][VERBOSE] :: Sent game start packet to player two");
-                                clientNamesToStreams.get(Pairs.get(index).getPlayerTwo().getName()).writeObject(GV);
+                                clientNamesToStreams.get(startingPairID.getPlayerTwo().getName()).writeObject(GV);
                                 System.out.println("[RequestsThread][VERBOSE] :: Sent game view to player two");
 
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerOne().getName()).start();
-                                clientNamesToThreads.get(Pairs.get(index).getPlayerTwo().getName()).start();
+                                clientNamesToThreads.get(startingPairID.getPlayerOne().getName()).start();
+                                clientNamesToThreads.get(startingPairID.getPlayerTwo().getName()).start();
                                 System.out.println("[RequestsThread][VERBOSE] :: Player thread started");
                             } else {
                                 System.out.println("[RequestsThread][VERBOSE] :: Player pair not loaded! Searching from pair in Database");
