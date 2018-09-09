@@ -26,20 +26,20 @@ public class JDBCHandler {
     @Deprecated
     //Either fix or delete. Preferably delete
     public boolean CreateUser(PlayerInternalData PID) {
-        //TODO : Verificar parametros
-        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
-            //TODO : Encriptar a password nem que seja com MD5
-            Statement S = conn.createStatement();
-            String query = "INSERT INTO Users (Name, Password, RealName) VALUES ('" + PID.getName() + "','" + PID.getPassword() + "','" + PID.getRealName() + "');";
-            S.execute(query);
-            return true;
-        } catch (SQLException sqlex) {
-            return false;
-        }
+        if (PID.getName() != null && PID.getPassword() != null && PID.getRealName() != null) {
+            try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
+                //TODO : Encriptar a password nem que seja com MD5
+                Statement S = conn.createStatement();
+                String query = "INSERT INTO Users (Name, Password, RealName) VALUES ('" + PID.getName() + "','" + PID.getPassword() + "','" + PID.getRealName() + "');";
+                S.execute(query);
+                return true;
+            } catch (SQLException sqlex) {
+                return false;
+            }
+        } else return false;
     }
 
     public boolean CreateUser(String Name, String Password, String realName) {
-        //TODO : Verificar parametros
         if (Name != null && Password != null && realName != null) {
             try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
                 //TODO : Encriptar a password nem que seja com MD5
@@ -124,21 +124,21 @@ public class JDBCHandler {
     }
 
     public PlayerInternalData RetrievePlayer(String userName) {
-        //TODO : Verificar parametros
-        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
-            Statement sqlQuery = conn.createStatement();
-            String query = "SELECT * FROM Users WHERE Name = '" + userName + "';";
-            ResultSet results = sqlQuery.executeQuery(query);
-            if (results != null) {
-                return results.next() ? new PlayerInternalData(results.getInt("ID"), results.getString("RealName"), results.getString("Name"), results.getInt("WonRounds"), results.getInt("LostRounds"), results.getInt("LoggedIn")) : null;
-            } else return null;
-        } catch (SQLException sqlex) {
-            return null;
-        }
+        if (userName != null) {
+            try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
+                Statement sqlQuery = conn.createStatement();
+                String query = "SELECT * FROM Users WHERE Name = '" + userName + "';";
+                ResultSet results = sqlQuery.executeQuery(query);
+                if (results != null) {
+                    return results.next() ? new PlayerInternalData(results.getInt("ID"), results.getString("RealName"), results.getString("Name"), results.getInt("WonRounds"), results.getInt("LostRounds"), results.getInt("LoggedIn")) : null;
+                } else return null;
+            } catch (SQLException sqlex) {
+                return null;
+            }
+        } else return null;
     }
 
     public PlayerInternalData RetrievePlayer(int ID) {
-        //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
             String query = "SELECT * FROM Users WHERE ID = " + ID + ";";
@@ -152,21 +152,21 @@ public class JDBCHandler {
     }
 
     public PlayerInternalData RetrievePlayerQuick(String name) {
-        //TODO : Verificar parametros
-        try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
-            Statement sqlQuery = conn.createStatement();
-            String query = "SELECT Name,LoggedIn FROM Users WHERE Name = '" + name + "';";
-            ResultSet results = sqlQuery.executeQuery(query);
-            if (results != null) {
-                return results.next() ? new PlayerInternalData(results.getString("Name"), results.getInt("LoggedIn")) : null;
-            } else return null;
-        } catch (SQLException sqlex) {
-            return null;
-        }
+        if (name != null) {
+            try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
+                Statement sqlQuery = conn.createStatement();
+                String query = "SELECT Name,LoggedIn FROM Users WHERE Name = '" + name + "';";
+                ResultSet results = sqlQuery.executeQuery(query);
+                if (results != null) {
+                    return results.next() ? new PlayerInternalData(results.getString("Name"), results.getInt("LoggedIn")) : null;
+                } else return null;
+            } catch (SQLException sqlex) {
+                return null;
+            }
+        } else return null;
     }
 
     public PlayerInternalData RetrievePlayerQuick(int ID) {
-        //TODO : Verificar parametros
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             Statement sqlQuery = conn.createStatement();
             String query = "SELECT Name,LoggedIn FROM Users WHERE ID = " + ID + ";";
@@ -412,7 +412,7 @@ public class JDBCHandler {
 
     public PairInternalData getPlayerActivePair(String name) throws SQLException {
         try (Connection c = DriverManager.getConnection(connectionString, username, password)) {
-            String query = "SELECT * FROM Pairs WHERE PlayerID IN ((SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 1) OR (PlayerTwo IN (SELECT ID FROM Users WHERE Name = '" + name + "') AND Active = 1);";
+            String query = "SELECT * FROM Pairs WHERE ((PlayerID IN (SELECT ID FROM Users WHERE Name = '" + name + "')) OR (PlayerTwo IN (SELECT ID FROM Users WHERE Name = '" + name + "'))) AND Active = 1";
             ResultSet rs = c.createStatement().executeQuery(query);
             if (rs != null) {
                 if (rs.next()) {
@@ -498,7 +498,7 @@ public class JDBCHandler {
     public void registerGame(GameInternalData playersGame) {
         try (Connection con = DriverManager.getConnection(connectionString, username, password)) {
             Statement s = con.createStatement();
-            String query = "INSERT INTO Games (GameToken,ScorePlayerOne,ScorePlayerTwo,Draws,PairID) VALUES('" + playersGame.getGameToken() + "'," + playersGame.getScorePlayerOne() + "," + playersGame.getScorePlayerTwo() + "," + playersGame.getScoreDraws() + "," + playersGame.getPlayingPair().getID() + ");";//TODO
+            String query = "INSERT INTO Games (GameToken,ScorePlayerOne,ScorePlayerTwo,Draws,PairID) VALUES('" + playersGame.getGameToken() + "'," + playersGame.getScorePlayerOne() + "," + playersGame.getScorePlayerTwo() + "," + playersGame.getScoreDraws() + "," + playersGame.getPlayingPair().getID() + ");";
             s.execute(query);
         } catch (SQLException e) {
             e.printStackTrace();
@@ -513,11 +513,9 @@ public class JDBCHandler {
         return password;
     }
 
-    public boolean ConnectToDB() {
+    public boolean ConnectToDB() throws SQLException {
         try (Connection conn = DriverManager.getConnection(connectionString, username, password)) {
             return true;
-        } catch (SQLException sqlex) {
-            return false;
         }
     }
     //</editor-fold>

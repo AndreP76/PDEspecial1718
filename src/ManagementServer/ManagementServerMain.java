@@ -10,6 +10,7 @@ import Comunication.JDBCUtils.JDBCHandler;
 import Comunication.RMIHandlers.RMIHeartbeatService;
 import Comunication.RMIInterfaces.ClientsCallbackInterface;
 import Comunication.RMIInterfaces.RMIManagementServerInterface;
+import Utils.Logger;
 import Utils.StringUtils;
 
 import java.net.MalformedURLException;
@@ -31,13 +32,12 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
     //*********************RMI MANAGEMENT STUFF**************************\\
     private RMIChatRoomModule RMICRM;
-    private HashMap<String, ClientsCallbackInterface> ClientInterfaces;
+    private final HashMap<String, ClientsCallbackInterface> ClientInterfaces = new HashMap<>();
 
     private ManagementServerMain(JDBCHandler DBHandler, RMIHeartbeatService RMIHS, RMIChatRoomModule RMICRM) throws RemoteException {
         this.DBHandler = DBHandler;
         this.RMIHS = RMIHS;
         this.RMICRM = RMICRM;
-        ClientInterfaces = new HashMap<>();
         if (LocateRegistry.getRegistry() == null) {
             LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
         }
@@ -50,14 +50,16 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
             public void run() {
-                Set<String> cc = ClientInterfaces.keySet();
-                for (String c : cc) {
-                    try {
-                        System.out.println("[Management server][VERBOSE] :: Logging out user " + c);
-                        DBHandler.LogoutUser(c);
-                    } catch (RemoteException e) {
-                        if (!(e instanceof DuplicateLogoutException)) {//kinda to be expected, so don't care
-                            e.printStackTrace();
+                synchronized (ClientInterfaces) {
+                    Set<String> cc = ClientInterfaces.keySet();
+                    for (String c : cc) {
+                        try {
+                            Logger.logInfo("Management server", "Logging out user " + c);
+                            DBHandler.LogoutUser(c);
+                        } catch (RemoteException e) {
+                            if (!(e instanceof DuplicateLogoutException)) {//kinda to be expected, so don't care
+                                e.printStackTrace();
+                            }
                         }
                     }
                 }
@@ -81,52 +83,50 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                 return;
             }
 
-            if (DBHandler.ConnectToDB()) {
-                try {
-                    if (LocateRegistry.getRegistry() == null) {
-                        LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
-                    }
-                    RMIHeartbeatService RMIHS = new RMIHeartbeatService(DBHandler.getDatabaseServerAddressString(), DBHandler.getDatabasePortString(), DBHandler.getUsername(), DBHandler.getPassword());
-                    System.out.println("[Heartbeat service][INFO] :: Heartbeat service started!");
+            try {
+                if (DBHandler.ConnectToDB()) {
                     try {
-                        RMIChatRoomModule RMICRM = new RMIChatRoomModule("RMIC", "127.0.0.1");//TODO : Talvez receber estes parametros por linha de comandos?
-                        System.out.println("[ChatRoom Service][INFO] :: ChatRoom service started!");
+                        if (LocateRegistry.getRegistry() == null) {
+                            LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
+                        }
+                        RMIHeartbeatService RMIHS = new RMIHeartbeatService(DBHandler.getDatabaseServerAddressString(), DBHandler.getDatabasePortString(), DBHandler.getUsername(), DBHandler.getPassword());
+                        Logger.logInfo("Management server", "Heartbeat service started");
+                        try {
+                            RMIChatRoomModule RMICRM = new RMIChatRoomModule("RMIC", "127.0.0.1");
+                            Logger.logInfo("Management server", "ChatRoom service started!");
 
-                        ManagementServerMain Msm = new ManagementServerMain(DBHandler, RMIHS, RMICRM);
-                        System.out.println("[ManagementServer][INFO] :: Server ready!");
+                            ManagementServerMain Msm = new ManagementServerMain(DBHandler, RMIHS, RMICRM);
+                            Logger.logInfo("Management server", "Server ready!");
 
-                        Scanner sIN = new Scanner(System.in);
-                        while (true) {
-                            System.out.print("Command : ");
-                            String command = sIN.nextLine();
-                            if (command.equals("exit")) {
-                                System.out.println("[Management server][INFO] :: Management server shutting down!");
-                                System.exit(0);
-                                return;
+                            Scanner sIN = new Scanner(System.in);
+                            while (true) {
+                                System.out.print("Command : ");
+                                String command = sIN.nextLine();
+                                if (command.equals("exit")) {
+                                    Logger.logInfo("Management server", "Management server shutting down");
+                                    System.exit(0);
+                                    return;
+                                }
                             }
+                        } catch (RemoteException e) {
+                            Logger.logError("Management server", "Remote error on ChatRoom Service! Shutting down!");
+                            Logger.logException(e);
+                            System.exit(-5);
+                        } catch (MalformedURLException e) {
+                            Logger.logError("Management server", "ChatRoom Service resource URL malformed! Shutting down!");
+                            System.exit(-6);
                         }
                     } catch (RemoteException e) {
-                        System.out.println("[ChatRoom service][ERROR] :: Remote error on ChatRoom Service! Shutting down!");
-                        System.err.println("[ChatRoom service][ERROR] :: Remote error on ChatRoom service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
-                        for (StackTraceElement ste : e.getStackTrace()) {
-                            System.err.println(ste.toString());
-                        }
-                        System.exit(-5);
-                    } catch (MalformedURLException e) {
-                        System.out.println("[ChatRoom service][ERROR] :: ChatRoom Service resource URL malformed! Shutting down!");
-                        System.exit(-6);
+                        Logger.logError("Management server", "Remote error on Heartbeat Service! Shutting down!");
+                        System.exit(-7);
                     }
-                } catch (RemoteException e) {
-                    System.out.println("[Heartbeat service][ERROR] :: Remote error on Heartbeat Service! Shutting down!");
-                    System.err.println("[Heartbeat service][ERROR] :: Remote error on Heartbeat service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
-                    for (StackTraceElement ste : e.getStackTrace()) {
-                        System.err.println(ste.toString());
-                    }
-                    System.exit(-7);
+                } else {
+                    Logger.logError("JDBCHandler", "Error establishing link to MariaDB/MySQL server! Shutting down!");
+                    System.exit(-8);
                 }
-            } else {
-                System.out.println("[JDBCHandler][ERROR] :: Error establishing link to MariaDB/MySQL server! Shutting down!");
-                System.exit(-8);
+            } catch (SQLException e) {
+                Logger.logError("JDBCHandler", "Could not connect to MariaDB/MySQL server! Shutting down!");
+                Logger.logException(e);
             }
         } else {
             usage();
@@ -137,7 +137,7 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
-        System.out.println("[Management server][INFO] :: Unbinding Management Server RMI Interface");
+        Logger.logInfo("Management server", "Unbinding Management Server RMI Interface");
         Naming.unbind("rmi://localhost/" + MANAGEMENT_SERVER_RMI);
     }
 
@@ -153,13 +153,14 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
     @Override
     public boolean registerNewClient(String name, String password, String realName) {
-        System.out.println("[Management server][VERBOSE] :: Registering new user : " + name);
+        Logger.logVerbose("Management server", "Registering new user " + name);
         return DBHandler.CreateUser(name, password, realName);
     }
 
     @Override
     public boolean login(ClientsCallbackInterface CCI, String name, String password) throws RemoteException {
-        System.out.println("[Management server][VERBOSE] :: Logging in user : " + name);
+        Logger.logVerbose("Management server", "Logging in user : " + name);
+        synchronized (ClientInterfaces) {
             if (DBHandler.LoginUser(name, password)) {
                 ClientInterfaces.put(name, CCI);
                 PlayerInternalData PID = DBHandler.RetrievePlayer(name);
@@ -170,15 +171,18 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
                 }
                 return true;
             } else return false;
+        }
     }
 
     @Override
     public boolean logout(String name) throws RemoteException {
-        System.out.println("[Management server][VERBOSE] :: Logging out user : " + name);
-        if (ClientInterfaces.containsKey(name)) {
-            ClientInterfaces.remove(name);
-            for (ClientsCallbackInterface c : ClientInterfaces.values()) {
-                c.playerLeft(new PlayerInternalData(name));
+        Logger.logVerbose("Management server", "Logging out user : " + name);
+        synchronized (ClientInterfaces) {
+            if (ClientInterfaces.containsKey(name)) {
+                ClientInterfaces.remove(name);
+                for (ClientsCallbackInterface c : ClientInterfaces.values()) {
+                    c.playerLeft(new PlayerInternalData(name));
+                }
             }
         }
         return DBHandler.LogoutUser(name);
@@ -206,24 +210,29 @@ public class ManagementServerMain extends UnicastRemoteObject implements RMIMana
 
     @Override
     public void requestPair(PlayerInternalData player, ClientsCallbackInterface requester) throws RemoteException {
-        System.out.println("[Management server][VERBOSE] :: User " + requester.getClientInfo() + " has requested a pair with " + player.getName());
+        Logger.logVerbose("Management server", "User " + requester.getClientInfo() + " has requested a pair with " + player.getName());
             if (DBHandler.ClientLoggedIn(requester.getClientInfo().getName())) {//requester is logged in
-                System.out.println("[Management server][VERBOSE] :: Requester is logged in and valid");
+                Logger.logVerbose("Management server", "Requester is logged in and valid");
                 if (ClientInterfaces.containsKey(player.getName())) {//target is registred in the server interfaces
-                    System.out.println("[Management server][VERBOSE] :: Target is logged in and valid");
+                    Logger.logVerbose("Management server", "Target is logged in and valid");
                     ClientsCallbackInterface cci = ClientInterfaces.get(player.getName());
-                    System.out.println("[Management server][VERBOSE] :: Sending request to target");
+                    Logger.logVerbose("Management server", "Sending request to target");
                     if (cci.onPairRequested(requester.getClientInfo(), this)) {
-                        System.out.println("[Management server][VERBOSE] :: Target accepted");
+                        Logger.logVerbose("Management server", "Target accepted");
                         try {
                             PairInternalData PID = DBHandler.createNewPair(cci.getClientInfo(), requester.getClientInfo(), StringUtils.RandomAlfa(32), true);
+                            try {
+                                Thread.sleep(100);
+                            } catch (InterruptedException e) {
+                                e.printStackTrace();
+                            }
                             cci.onPairRequestAccepted(PID);
                             requester.onPairRequestAccepted(PID);
                         } catch (SQLException e) {
                             e.printStackTrace();
                         }
                     } else {//the client rejected
-                        System.out.println("[Management server][VERBOSE] :: Target refused");
+                        Logger.logVerbose("Management server", "Target refused");
                         requester.onPairRequestRejected();
                     }
                 } else {

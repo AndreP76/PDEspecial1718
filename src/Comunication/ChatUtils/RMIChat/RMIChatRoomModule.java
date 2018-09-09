@@ -1,8 +1,9 @@
 package Comunication.ChatUtils.RMIChat;
 
-import Comunication.ChatUtils.TCPChat.ChatPacket;
+import Comunication.ChatUtils.DataPackets.ChatPacket;
 import Comunication.RMIInterfaces.RMIChatClientInterface;
 import Comunication.RMIInterfaces.RMIChatRoomInterface;
+import Utils.Logger;
 
 import java.net.MalformedURLException;
 import java.rmi.Naming;
@@ -23,7 +24,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
         try {
             LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
         } catch (RemoteException e) {
-            System.out.println("[ChatServer][VERBOSE] :: RMI Registry already found");
+            Logger.logInfo("ChatServer", "RMI  Registry found");
         }
 
         Naming.rebind("rmi://" + serviceIP + "/" + serviceName, this);
@@ -32,7 +33,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void newClient(String clientName, RMIChatClientInterface clientChat) throws RemoteException {
-        System.out.println("[ChatServer][VERBOSE] :: Client " + clientName + " has registred in the chat");
+        Logger.logInfo("ChatServer", "Client " + clientName + " has registred in the chat");
         if (!clientsToInterface.containsKey(clientName)) {
             clientsToInterface.put(clientName, clientChat);
             for (RMIChatClientInterface c : clientsToInterface.values()) {
@@ -47,7 +48,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void removeClient(String clientName) throws RemoteException {
-        System.out.println("[ChatServer][VERBOSE] :: Client " + clientName + " has left the chat");
+        Logger.logInfo("ChatServer", "Client " + clientName + " has left the chat");
         if (clientsToInterface.containsKey(clientName)) {
             clientsToInterface.remove(clientName);
             for (RMIChatClientInterface c : clientsToInterface.values()) {
@@ -58,7 +59,8 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public void newMessage(ChatPacket message) throws RemoteException {
-        System.out.println("[ChatServer][VERBOSE] :: New message arrived from " + message.getSender() + " : " + message.getMessageContents());
+        Logger.logInfo("ChatServer", "New message arrived");
+        Logger.logDebug("ChatServer", "Message from " + message.getSender() + " : " + message.getMessageContents());
         if (message.getTarget().equals(ChatPacket.GENERAL_STRING)) {//send to everyone
             Set<Map.Entry<String, RMIChatClientInterface>> RMIC = clientsToInterface.entrySet();
             for (Map.Entry<String, RMIChatClientInterface> R : RMIC) {
@@ -73,7 +75,7 @@ public class RMIChatRoomModule extends UnicastRemoteObject implements RMIChatRoo
 
     @Override
     public ArrayList<String> getClients() {
-        System.out.println("[ChatServer][VERBOSE] :: Client list requested");
+        Logger.logVerbose("ChatServer", "Client list requested");
         ArrayList<String> keyset = new ArrayList<>(clientsToInterface.keySet());
         keyset.add(ChatPacket.GENERAL_STRING);
         return keyset;

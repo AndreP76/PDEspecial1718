@@ -36,11 +36,15 @@ public class JDBCHandlerTestModule {
 
     private static boolean TestConnection() {
         System.out.println("Database connection test initiated");
-        if (j.ConnectToDB()) {
-            System.out.println("Database connection test successful!");
-            return true;
-        } else {
-            System.out.println("Database connection test failed...");
+        try {
+            if (j.ConnectToDB()) {
+                System.out.println("Database connection test successful!");
+                return true;
+            } else {
+                System.out.println("Database connection test failed...");
+                return false;
+            }
+        } catch (SQLException e) {
             return false;
         }
     }

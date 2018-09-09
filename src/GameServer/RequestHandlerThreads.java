@@ -1,13 +1,14 @@
 package GameServer;
 
-import Comunication.ChatUtils.TCPChat.GameCommand;
-import Comunication.ChatUtils.TCPChat.GamePacket;
+import Comunication.ChatUtils.DataPackets.GameCommand;
+import Comunication.ChatUtils.DataPackets.GamePacket;
 import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import GameClient.Forms.GameForm;
 import RockPaperScissors.Game;
 import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
+import Utils.Logger;
 
 import java.io.IOException;
 import java.io.ObjectInputStream;
@@ -40,29 +41,29 @@ public class RequestHandlerThreads extends Thread implements Observer {
 
     @Override
     public void run() {
-        System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Handler thread started");
+        Logger.logInfo("Request Handler Thread " + this.getName() + ":" + this.getId(), "Handler thread started");
         while (!isInterrupted()) {
             try {
                 GamePacket gp = (GamePacket) fromClientStream.readObject();
-                System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Received a client message");
+                Logger.logVerbose("Request Handler Thread " + this.getName() + ":" + this.getId(), "Received a client message");
                 if (gp.getCommand() == GameCommand.MAKE_PLAY) {
-                    System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Message was a move");
+                    Logger.logVerbose("Request Handler Thread " + this.getName() + ":" + this.getId(), "Message was a move");
                     GameChoice GC = (GameChoice) fromClientStream.readObject();
                     if (!thisPlayerGameData.getG().hasPlayerChoosen(gp.getSender())) {
                         thisPlayerGameData.getG().Play(gp.getSender(), GC);
                     }
                     GameServerMain.saveGame(thisPlayerGameData);
                 } else if (gp.getCommand() == GameCommand.PLAYER_LEAVING) {//Oh my, how rude
-                    System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][VERBOSE] :: Message was a leaving notification");
+                    Logger.logVerbose("Request Handler Thread " + this.getName() + ":" + this.getId(), "Message was a leaving notification");
                     masterThread.playerLeaving(thisPlayer, thisPlayerGameData);
                     return;
                 }
             } catch (IOException e) {
-                System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][ERROR] :: IOException occurred! Thread terminating");
+                Logger.logError("Request Handler Thread " + this.getName() + ":" + this.getId(), "IOException occurred! Thread terminating");
                 masterThread.playerLeaving(thisPlayer, thisPlayerGameData);
                 return;
             } catch (ClassNotFoundException e) {
-                System.out.println("[RequestHandlerThread " + this.getName() + ":" + this.getId() + " ][WARNING] :: ClassNotFound occurred!");
+                Logger.logInfo("Request Handler Thread " + this.getName() + ":" + this.getId(), "ClassNotFound occurred");
             }
         }
     }

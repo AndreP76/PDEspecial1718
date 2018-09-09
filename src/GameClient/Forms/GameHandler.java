@@ -1,7 +1,7 @@
 package GameClient.Forms;
 
-import Comunication.ChatUtils.TCPChat.GameCommand;
-import Comunication.ChatUtils.TCPChat.GamePacket;
+import Comunication.ChatUtils.DataPackets.GameCommand;
+import Comunication.ChatUtils.DataPackets.GamePacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import GameServer.GameServerMain;
 import RockPaperScissors.GameChoice;

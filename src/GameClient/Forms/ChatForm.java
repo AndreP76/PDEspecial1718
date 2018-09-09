@@ -1,9 +1,10 @@
 package GameClient.Forms;
 
+import Comunication.ChatUtils.DataPackets.ChatPacket;
 import Comunication.ChatUtils.RMIChat.RMIChatClientModule;
-import Comunication.ChatUtils.TCPChat.ChatPacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.RMIInterfaces.RMIChatRoomInterface;
+import Utils.Logger;
 
 import javax.swing.*;
 import javax.swing.event.ChangeEvent;
@@ -41,12 +42,12 @@ public class ChatForm {
         }
 
         chatClient.setOnNewClientListener(s -> {
-            System.out.println("New client listener called");
+            Logger.logVerbose("ChatForm", "New client listener called");
             playerListModel.addElement(s);
             playersList.setModel(playerListModel);
         });
         chatClient.setOnNewMessageListener(chatPacket -> {
-            System.out.println("New message listener called");
+            Logger.logVerbose("ChatForm", "New message listener called");
             JTextArea jta = findTextarea(chatPacket.getTarget().equals(ChatPacket.GENERAL_STRING) ? chatPacket.getTarget() : chatPacket.getSender());
             jta.append(chatPacket.getSender() + " :: " + chatPacket.getMessageContents() + "\n");
         });
@@ -58,7 +59,7 @@ public class ChatForm {
             }
         });
         btnSend.addActionListener(act -> {
-            System.out.println("Send message listener called");
+            Logger.logVerbose("ChatForm", "Send message listener called");
             try {
                 if (!messageBox.getText().isEmpty()) {
                     chatClient.sendMessage(currentTarget, messageBox.getText());

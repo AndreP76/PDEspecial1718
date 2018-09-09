@@ -1,6 +1,6 @@
 package Comunication.RMIInterfaces;
 
-import Comunication.ChatUtils.TCPChat.ChatPacket;
+import Comunication.ChatUtils.DataPackets.ChatPacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 
 import java.rmi.Remote;

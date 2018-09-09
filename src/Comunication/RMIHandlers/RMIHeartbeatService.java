@@ -1,6 +1,7 @@
 package Comunication.RMIHandlers;
 
 import Comunication.RMIInterfaces.RMIHeartbeatInterface;
+import Utils.Logger;
 import Utils.StringUtils;
 
 import java.io.Serializable;
@@ -26,9 +27,7 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
 
     public RMIHeartbeatService(String DBServerIP, String DBServerPort, String DBServerUser, String DBServerPassword) throws RemoteException {
         try {
-            //if (LocateRegistry.getRegistry() == null) {
             LocateRegistry.createRegistry(Registry.REGISTRY_PORT);
-            //}
             Naming.rebind("rmi://localhost/" + RMI_HEARTBEAT_SERVICE_NAME, this);
 
             this.DBServerIP = DBServerIP;
@@ -44,7 +43,7 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
 
     @Override
     public String[] hearbeatMethod(String ID, String IPAddress) {
-        System.out.println("[Heartbeat service][VERBOSE] :: Heartbeat called!");
+        Logger.logVerbose("Heartbeat service", "Heartbeat called!");
         IDPair ipd = findID(ID);
         if (ipd == null) {//ID does not exist
             IDtoHeartbeatCount.add(new IDPair(ID, 0, IPAddress));
@@ -54,7 +53,7 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
             watchdog = new RMIWatchdogThread();
             watchdog.start();
         }
-        System.out.println("[Heartbeat service][VERBOSE] :: Oldest game server is " + oldestPair.getID() + "@" + oldestPair.getIPAddress());
+        Logger.logDebug("Heartbeat service", "Oldest game server is " + oldestPair.getID() + "@" + oldestPair.getIPAddress());
         if (oldestPair.getID().equals(ID)) {
             return new String[]{DBServerIP, DBServerPort, DBServerUser, DBServerPassword};
         } else {
@@ -139,24 +138,24 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
         private String lastOldestPairSignature = null;
         private int maxFailures = 3;
         private int currentConsecutiveFailures = 0;
-        private int cumulativeFailures = 0;//statistics and shiet
+        private int cumulativeFailures = 0;//statistics and stuff
 
         @Override
         public void run() {
             lastOldestPairSignature = oldestPair.heartbeatSignature;
             while (!isInterrupted()) {
                 try {
-                    Thread.sleep(3000);
-                    System.out.println("[Heatbeat Watchdog][VERBOSE] :: Starting heartbeat check");
+                    Thread.sleep(RMIHeartbeatHandler.HEARTBEAT_INTERVAL_MILIS);
+                    Logger.logVerbose("Heartbeat Watchdog", "Starting heartbeat check");
                     synchronized (IDtoHeartbeatCount) {
                         if (oldestPair != null) {
-                            System.out.println("[Heatbeat Watchdog][DEBUG] :: Stored signature : " + lastOldestPairSignature + "\n                               Actual signature : " + oldestPair.heartbeatSignature);
+                            Logger.logDebug("Heartbeat Watchdog", "Stored signature : " + lastOldestPairSignature + "\n                              Actual signature : " + oldestPair.heartbeatSignature);
                             if (lastOldestPairSignature.equals(oldestPair.heartbeatSignature)) {//no heartbeats for 3 seconds
-                                System.out.println("[Heatbeat Watchdog][VERBOSE] :: No heartbeat detected...");
+                                Logger.logVerbose("Heartbeat Watchdog", "Ho heartbeat detected...");
                                 currentConsecutiveFailures++;
                                 cumulativeFailures++;
                                 if (currentConsecutiveFailures >= maxFailures) {//drop current oldest pair and start looking for another.
-                                    System.out.println("[Heatbeat Watchdog][VERBOSE] :: Game server is dead. Searching for new server...");
+                                    Logger.logVerbose("Heartbeat Watchdog", "Game server is dead. Searching for new server...");
                                     IDPair ipd = findID(oldestPair.ID);
                                     if (ipd != null) {
                                         ipd.setHeartbeats(-1);
@@ -165,14 +164,15 @@ public class RMIHeartbeatService extends UnicastRemoteObject implements RMIHeart
                                 }
                             } else {//there was an heartbeat
                                 lastOldestPairSignature = oldestPair.heartbeatSignature;
-                                System.out.println("[Heatbeat Watchdog][VERBOSE] :: Heartbeat detected! Continuing.");
+                                Logger.logVerbose("Heartbeat Watchdog", "Heartbeat detected!");
                                 currentConsecutiveFailures = 0;
                             }
-                        } else System.out.println("[Heatbeat Watchdog][VERBOSE] :: No game server present");
+                        } else Logger.logVerbose("Heartbeat Watchdog", "No game server present");
                     }
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+                Logger.logInfo("Heartbeat Watchdog", "Current failures [" + currentConsecutiveFailures + " out of " + maxFailures + "] (" + cumulativeFailures + " total failures)");
             }
         }
     }

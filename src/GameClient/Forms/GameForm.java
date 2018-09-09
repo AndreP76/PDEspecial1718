@@ -5,9 +5,6 @@ import RockPaperScissors.GameChoice;
 import RockPaperScissors.GameView;
 
 import javax.swing.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
-import java.util.function.Consumer;
 
 public class GameForm {
     public static final String DRAW_NAME = "5551651534531354354355135242466756+8756827+6857+685+6758+7586+756+8756+8567+586";//lulz
@@ -44,77 +41,47 @@ public class GameForm {
         frame.setVisible(true);
         blockForm();
 
-        gh.setOnGameStarted(new Consumer<GameView>() {
-            @Override
-            public void accept(GameView gameView) {
-                unblockForm();
-                renderGameView(gameView);
-            }
+        gh.setOnGameStarted(gameView -> {
+            unblockForm();
+            renderGameView(gameView);
         });
-        gh.setOnWinnerDecided(new Consumer<String>() {
-            @Override
-            public void accept(String playerName) {
-                if (playerName.equals(DRAW_NAME)) {
-                    JOptionPane.showMessageDialog(null, "This round was a draw...");
-                }
-                JOptionPane.showMessageDialog(null, playerName + " has won this round!");
-                unblockForm();
+        gh.setOnWinnerDecided(playerName -> {
+            if (playerName.equals(DRAW_NAME)) {
+                JOptionPane.showMessageDialog(null, "This round was a draw...");
             }
+            JOptionPane.showMessageDialog(null, playerName + " has won this round!");
+            unblockForm();
         });
-        gh.setOnGameStopped(new Consumer<Void>() {
-            @Override
-            public void accept(Void aVoid) {
-                blockForm();
-            }
-        });
-        gh.setOnGameUpdated(new Consumer<GameView>() {
-            @Override
-            public void accept(GameView gameView) {
-                renderGameView(gameView);
-            }
-        });
-        gh.setOnPlayerQuit(new Consumer<PlayerInternalData>() {//winner by default
-            @Override
-            public void accept(PlayerInternalData playerInternalData) {
-                //TODO STUFF HERE
-            }
+        gh.setOnGameStopped(aVoid -> blockForm());
+        gh.setOnGameUpdated(this::renderGameView);
+        //winner by default
+        gh.setOnPlayerQuit(playerInternalData -> {
+            gh.interrupt();
+            frame.dispose();
+            lf.showGUI(GameForm.this);
         });
 
         //Setup the buttons
-        btnLizard.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                gh.sendGameMove(GameChoice.Lizard);
-                blockForm();
-            }
+        btnLizard.addActionListener(actionEvent -> {
+            gh.sendGameMove(GameChoice.Lizard);
+            blockForm();
         });
-        btnScissors.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                gh.sendGameMove(GameChoice.Scissors);
-                blockForm();
-            }
+        btnScissors.addActionListener(actionEvent -> {
+            gh.sendGameMove(GameChoice.Scissors);
+            blockForm();
         });
-        btnSpock.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                gh.sendGameMove(GameChoice.Spock);
-                blockForm();
-            }
+        btnSpock.addActionListener(actionEvent -> {
+            gh.sendGameMove(GameChoice.Spock);
+            blockForm();
         });
-        btnPaper.addActionListener(new ActionListener() {
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                gh.sendGameMove(GameChoice.Paper);
-                blockForm();
-            }
+        btnPaper.addActionListener(actionEvent -> {
+            gh.sendGameMove(GameChoice.Paper);
+            blockForm();
         });
-        btnRocket.addActionListener(new ActionListener() {//why did I name this button Rocket ?
-            @Override
-            public void actionPerformed(ActionEvent actionEvent) {
-                gh.sendGameMove(GameChoice.Rock);
-                blockForm();
-            }
+        //why did I name this button Rocket ?
+        btnRocket.addActionListener(actionEvent -> {
+            gh.sendGameMove(GameChoice.Rock);
+            blockForm();
         });
 
         gh.start();

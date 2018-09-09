@@ -1,9 +1,10 @@
 package Comunication.ChatUtils.RMIChat;
 
-import Comunication.ChatUtils.TCPChat.ChatPacket;
+import Comunication.ChatUtils.DataPackets.ChatPacket;
 import Comunication.JDBCUtils.InternalData.PlayerInternalData;
 import Comunication.RMIInterfaces.RMIChatClientInterface;
 import Comunication.RMIInterfaces.RMIChatRoomInterface;
+import Utils.Logger;
 
 import java.io.Serializable;
 import java.net.MalformedURLException;
@@ -49,20 +50,16 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     @Override
     public void newMessage(ChatPacket cp) {
         if (onNewMessageListener != null) {
-            System.out.println("[CHAT CLIENT] :: message listener not null");
+            Logger.logDebug("Chat client", "new message listener not null");
             onNewMessageListener.accept(cp);
         } else {
-            System.out.println("[CHAT CLIENT] :: message listener null");
+            Logger.logWarning("Chat client", "new message listener null");
         }
     }
 
     @Override
     public PlayerInternalData getClientDetails() {
         return PID;
-    }
-
-    public void sendMessage(String message) throws RemoteException {
-        sendMessage(ChatPacket.GENERAL_STRING, message);
     }
 
     public void sendMessage(String target, String message) throws RemoteException {
@@ -73,20 +70,20 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
 
     public void newClient(String newClient) {
         if (onNewClientListener != null) {
-            System.out.println("[CHAT CLIENT] :: client listener not null");
+            Logger.logDebug("Chat client", "new client listener not null");
             onNewClientListener.accept(newClient);
         } else {
-            System.out.println("[CHAT CLIENT] :: client listener null");
+            Logger.logWarning("Chat client", "new client listener is null");
         }
     }
 
     @Override
     public void clientLeft(String clientName) {
         if (onClientLeftListener != null) {
-            System.out.println("[CHAT CLIENT] :: client left listener not null");
+            Logger.logDebug("Chat client", "client left listener not null");
             onClientLeftListener.accept(clientName);
         } else {
-            System.out.println("[CHAT CLIENT] :: client left listener null");
+            Logger.logWarning("Chat client", "client left listener is null");
         }
     }
 
@@ -95,17 +92,17 @@ public class RMIChatClientModule extends UnicastRemoteObject implements RMIChatC
     }
 
     public void setOnNewClientListener(Consumer<String> onNewClientListener) {//LULZ typo
-        System.out.println("[CHAT CLIENT] :: setting client listener");
+        Logger.logDebug("Chat client", "Setting client listener");
         this.onNewClientListener = onNewClientListener;
     }
 
     public void setOnNewMessageListener(Consumer<ChatPacket> onNewMessageListener) {
-        System.out.println("[CHAT CLIENT] :: setting message listener");
+        Logger.logDebug("Chat client", "Setting message listener");
         this.onNewMessageListener = onNewMessageListener;
     }
 
     public void setOnClientLeftListener(Consumer<String> onClientLeftListener) {
-        System.out.println("[CHAT CLIENT] :: setting client left listener");
+        Logger.logDebug("Chat client", "Setting client left listener");
         this.onClientLeftListener = onClientLeftListener;
     }
 

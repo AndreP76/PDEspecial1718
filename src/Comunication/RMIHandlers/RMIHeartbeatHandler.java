@@ -2,6 +2,7 @@ package Comunication.RMIHandlers;
 
 import Comunication.JDBCUtils.JDBCHandler;
 import Comunication.RMIInterfaces.RMIHeartbeatInterface;
+import Utils.Logger;
 import Utils.StringUtils;
 
 import java.net.MalformedURLException;
@@ -11,10 +12,7 @@ import java.rmi.RemoteException;
 
 public class RMIHeartbeatHandler extends Thread {
     private JDBCHandler DBHandler = null;//here because the heartbeats update this
-    private int HearbeatMiliseconds = 3000; //3 seconds between beats
-    private int HearbeatMaxConsecutiveFailures = 3;//stops on this number of failed heartbeats
-    private int CurrentConsecutiveHeatbeatFailures = 0;
-    private int CumulativeHeatbeatFailures = 0;//stats only
+    public static final int HEARTBEAT_INTERVAL_MILIS = 3000; //3 seconds between beats
 
     private RMIHeartbeatInterface managementServer;
     private String ManagementServerIPAddressString;
@@ -38,11 +36,11 @@ public class RMIHeartbeatHandler extends Thread {
     @Override
     public void run() {
         try {
-            System.out.println("[Heartbeat Thread][VERBOSE] :: Thread starting");
-            System.out.println("[Heartbeat Thread][INFO] :: ServerID : " + ID);
+            Logger.logInfo("Heartbeat Thread", "Heartbeat thread starting");
+            Logger.logDebug("Heartbeat Thread", "Server ID : " + ID);
             managementServer = (RMIHeartbeatInterface) Naming.lookup(RMIConnectionString);
             String[] DBCredencials = managementServer.hearbeatMethod(this.ID, this.socketAddress);//The initial update
-            System.out.println("[Heartbeat Thread][VERBOSE] :: Creating DBHandler");
+            Logger.logVerbose("Heartbeat Thread", "Creating DBHandler");
             if (DBHandler == null)
                 DBHandler = new JDBCHandler(DBCredencials[0], DBCredencials[1], DBCredencials[2], DBCredencials[3]);
             else {
@@ -51,45 +49,36 @@ public class RMIHeartbeatHandler extends Thread {
                 DBHandler.setPassword(DBCredencials[3]);
                 DBHandler.setUsername(DBCredencials[2]);
             }
-            System.out.println("[Heartbeat Thread][VERBOSE] :: DBHandler created");
+            Logger.logVerbose("Heartbeat Thread", "DBHandler created");
         } catch (NotBoundException e) {
-            System.out.println("[Heartbeat Thread][ERROR] :: Heartbeat Server not found! Exiting!");
+            Logger.logError("Heartbeat Thread", "Heartbeat Server not found! Exiting");
             System.exit(-1);
         } catch (MalformedURLException e) {
-            System.out.println("[Heartbeat Thread][ERROR] :: Heartbeat Server URL invalid! Exiting!");
+            Logger.logError("Heartbeat Thread", "Heartbeat Server URL invalid! Exiting");
             System.exit(-2);
         } catch (RemoteException e) {
-            System.out.println("[Heartbeat Thread][ERROR] :: Remote error on heartbeat service!");
-            System.err.println("[Heartbeat Thread][ERROR] :: Remote error on heartbeat service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
-            for (StackTraceElement ste : e.getStackTrace()) {
-                System.err.println(ste.toString());
-            }
+            Logger.logError("Heartbeat Thread", "Remote error on Heartbeat service! Exiting");
+            //maybe log exception too?
             System.exit(-3);
         }
         while (!isInterrupted()) {
             try {
                 try {
-                    Thread.sleep(HearbeatMiliseconds);
+                    Thread.sleep(HEARTBEAT_INTERVAL_MILIS);
                 } catch (InterruptedException e) {
-                    System.out.println("[Heartbeat Thread][WARNING] :: Thread.sleep interrupted");
-                    System.err.println("[Heartbeat Thread][WARNING] :: Thread.sleep interrupted. Error : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStackTrace : ");
-                    for (StackTraceElement ste : e.getStackTrace()) {
-                        System.err.println(ste.toString());
-                    }
+                    Logger.logWarning("Heartbeat Thread", "Thread.sleep interrupted");
+                    //maybe log exception too?
                 }
-                System.out.println("[Heartbeat Thread][VERBOSE] :: Calling heartbeat method");
+                Logger.logVerbose("Heartbeat Thread", "Calling heartbeat method");
                 String[] DBCredencials = managementServer.hearbeatMethod(this.ID, this.socketAddress);
-                System.out.println("[Heartbeat Thread][VERBOSE] :: DBHandler updated");
                 DBHandler.setDatabaseServerAddressString(DBCredencials[0]);
                 DBHandler.setDatabasePortString(DBCredencials[1]);
                 DBHandler.setPassword(DBCredencials[3]);
                 DBHandler.setUsername(DBCredencials[2]);
+                Logger.logVerbose("Heartbeat Thread", "DBHandler refreshed");
             } catch (RemoteException e) {
-                System.out.println("[Heartbeat Thread][WARNING] :: Remote error on heartbeat service!");
-                System.err.println("[Heartbeat Thread][WARNING] :: Remote error on heartbeat service. Error message : " + e.getMessage() + "\nCaused by : " + e.getCause() + "\nStacktrace : ");
-                for (StackTraceElement ste : e.getStackTrace()) {
-                    System.err.println(ste.toString());
-                }
+                Logger.logWarning("Heartbeat Thread", "Remote error on heartbeat service");
+                //maybe log exception
                 System.exit(-3);
             }
         }

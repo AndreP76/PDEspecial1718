@@ -3,6 +3,7 @@ package GameServer;
 import Comunication.JDBCUtils.InternalData.GameInternalData;
 import Comunication.JDBCUtils.InternalData.PairInternalData;
 import Comunication.RMIHandlers.RMIHeartbeatHandler;
+import Utils.Logger;
 
 import java.io.*;
 import java.net.Inet4Address;
@@ -37,15 +38,15 @@ public class GameServerMain {
                 Runtime.getRuntime().addShutdownHook(new Thread() {
                     @Override
                     public void run() {
-                        System.out.println("[Game Server][INFO] :: Shutdown hook One called");
+                        Logger.logInfo("Game Server", "Shutdown hook one called");
                         deleteSavedGames();
-                        System.out.println("[Game Server][INFO] :: Shutdown hook Two called");
+                        Logger.logInfo("Game Server", "Shutdown hook two called");
                         for (PairInternalData p : rt.getPairs()) {
-                            System.out.println("[Game Server][VERBOSE] :: Deactivating " + p.getToken());
+                            Logger.logVerbose("Game Server", "Deactivating " + p.getToken());
                             try {
                                 rt.getDBHandler().DeactivatePair(p.getToken());
                             } catch (SQLException e) {
-                                System.out.println("[Game Server][ERROR] :: Failed to deactivate pair [" + p.getToken() + "]");
+                                Logger.logError("Game Server", "Failed to deactivate pair [" + p.getToken() + "]");
                             }
                         }
                     }
@@ -61,7 +62,8 @@ public class GameServerMain {
                     }
                 }
             } catch (UnknownHostException e) {
-                System.out.println("Cannot find management server. Shutting down");
+                Logger.logError("Game server", "Cannot find management server. Exiting...");
+                Logger.logException(e);
             }
         } else usage();
     }
@@ -92,9 +94,9 @@ public class GameServerMain {
         try (ObjectInputStream ois = new ObjectInputStream(new FileInputStream(gameFile))) {
             return (GameInternalData) ois.readObject();
         } catch (IOException e) {
-            System.out.println("[Game Server][ERROR] :: Failed to load game [" + game + "]");
+            Logger.logError("Game Server", "Failed to load game [" + game + "]");
         } catch (ClassNotFoundException e) {
-            System.out.println("[Game Server][ERROR] :: Failed to load game [" + game + "]\nCould not interpret class!");
+            Logger.logError("Game Server", "Failed to load game [" + game + "]\nCould not interpret class!");
         }
         return null;
     }
@@ -113,7 +115,7 @@ public class GameServerMain {
             out.writeObject(thisPlayerGameData);
             out.close();
         } catch (IOException e) {
-            e.printStackTrace();
+            Logger.logException(e);
         }
     }
 
@@ -124,7 +126,7 @@ public class GameServerMain {
             for (File file : filesInFolder) {
                 if (!file.isDirectory()) {
                     file.delete();
-                    System.out.println("[Game Server][VERBOSE] :: Deleting " + file.getAbsolutePath());
+                    Logger.logDebug("Game Server", "Deleting " + file.getAbsolutePath());
                 }
             }
         }

@@ -1,4 +1,4 @@
-package Comunication.ChatUtils.TCPChat;
+package Comunication.ChatUtils.DataPackets;
 
 import java.io.Serializable;
 

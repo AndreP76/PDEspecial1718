@@ -1,6 +1,6 @@
 package Comunication.RMIInterfaces;
 
-import Comunication.ChatUtils.TCPChat.ChatPacket;
+import Comunication.ChatUtils.DataPackets.ChatPacket;
 
 import java.rmi.Remote;
 import java.rmi.RemoteException;
